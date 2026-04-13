@@ -68,8 +68,8 @@ echo "🔑 Adding environment variables..."
 $SSH << 'EOF'
 cd /opt/w9-labs
 if ! grep -q "NVIDIA_API_KEY=" .env; then
-  echo "NVIDIA_API_KEY=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" >> .env
-  echo "VOCAI_OAUTH_SECRET=vocai_oauth_secret_change_in_production" >> .env
+  echo "NVIDIA_API_KEY=\${NVIDIA_API_KEY} # set in .env" >> .env
+  echo "VOCAI_OAUTH_SECRET=\${VOCAI_OAUTH_SECRET}" >> .env
   echo "✅ Environment variables added"
 else
   echo "⚠️  Environment variables already exist"
