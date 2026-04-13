@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Review your vocabulary flashcards with spaced repetition. Master words efficiently with SRS algorithm.">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Review Session — Vocai: Vocab+AI</title>
+    <link rel="icon" type="image/svg+xml" href="/w9-logo/logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/vocai.css">
+</head>
+<body>
+    <div class="page-wrapper">
+        <nav class="nav">
+            <div class="container nav__inner">
+                <a href="/" class="nav__logo">
+                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai Logo" />
+                    <span>Vocai</span>
+                </a>
+                <ul class="nav__links">
+                    <li><a href="/dashboard" class="nav__link">Dashboard</a></li>
+                    <li><a href="/flashcards" class="nav__link">Flashcards</a></li>
+                    <li><a href="/islands" class="nav__link">Islands</a></li>
+                    <li><a href="/review" class="nav__link" style="color: var(--secondary);">Review</a></li>
+                    <li><a href="/logout" class="btn btn--secondary btn--sm">Logout</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main>
+            <div class="container">
+                <div class="flex justify-between items-center mb-lg">
+                    <div>
+                        <h1>🎯 Review Session</h1>
+                        <p>Master your vocabulary with spaced repetition</p>
+                    </div>
+                    <div class="badge badge--info">
+                        <span id="cards-remaining">0</span> cards remaining
+                    </div>
+                </div>
+
+                <!-- Flashcard Container -->
+                <div id="flashcard-container" class="mt-lg">
+                    <div class="loading">
+                        <div class="loading__spinner"></div>
+                        <p>Loading review session...</p>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mt-xl">
+                    <div style="background: var(--bg-elevated); border-radius: var(--radius-md); height: 8px; overflow: hidden;">
+                        <div id="progress-bar" style="background: linear-gradient(90deg, var(--primary), var(--secondary)); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <p class="text-center text-secondary mt-sm">
+                        <span id="cards-reviewed">0</span> / <span id="cards-total">0</span> reviewed
+                    </p>
+                </div>
+
+                <!-- Session Stats -->
+                <div class="grid grid--3col mt-xl">
+                    <div class="stats-card">
+                        <div class="stats-card__value" id="stat-correct" style="color: var(--success);">0</div>
+                        <div class="stats-card__label">Correct</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-card__value" id="stat-incorrect" style="color: var(--error);">0</div>
+                        <div class="stats-card__label">Incorrect</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-card__value" id="stat-accuracy">0%</div>
+                        <div class="stats-card__label">Accuracy</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container footer__inner">
+                <div class="footer__logo">
+                    <img src="/w9-logo/workmark-transparent.svg" alt="W9 Labs" />
+                    <span>Built with 💜 by W9 Labs</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/assets/js/vocai.js"></script>
+    <script>
+        // Track session stats
+        let sessionStats = { correct: 0, incorrect: 0, total: 0 };
+
+        // Override submitReview to track stats
+        const originalSubmitReview = flashcardManager.submitReview.bind(flashcardManager);
+        flashcardManager.submitReview = async function(quality) {
+            sessionStats.total++;
+            if (quality >= 3) {
+                sessionStats.correct++;
+            } else {
+                sessionStats.incorrect++;
+            }
+
+            // Update UI
+            document.getElementById('stat-correct').textContent = sessionStats.correct;
+            document.getElementById('stat-incorrect').textContent = sessionStats.incorrect;
+            const accuracy = Math.round((sessionStats.correct / sessionStats.total) * 100);
+            document.getElementById('stat-accuracy').textContent = accuracy + '%';
+
+            await originalSubmitReview(quality);
+        };
+    </script>
+</body>
+</html>

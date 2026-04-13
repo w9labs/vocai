@@ -1,0 +1,30 @@
+# ============================================================
+# VOCAI: Vocab+AI — Docker Compose Service
+# Add this to /opt/w9-labs/docker-compose.yml on the VPS
+# ============================================================
+
+services:
+  vocai:
+    image: ghcr.io/w9labs/vocai:latest
+    container_name: vocai
+    restart: unless-stopped
+    networks:
+      - w9-labs_default
+    environment:
+      - PORT=3010
+      - RUST_LOG=info
+      - VOCAI_BASE_URL=https://vocai.top
+      - DATABASE_URL=postgres://w9_admin:${POSTGRES_PASSWORD}@w9-postgres:5432/w9_vocabai
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - ISSUER_URL=https://db.w9.nu
+      - OAUTH_CLIENT_ID=vocai
+      - OAUTH_CLIENT_SECRET=${VOCAI_OAUTH_SECRET}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3010/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "com.w9labs.service=vocai"
+      - "com.w9labs.port=3010"

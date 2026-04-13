@@ -1,0 +1,29 @@
+[package]
+name = "vocai-server"
+version = "0.1.0"
+edition = "2024"
+description = "Vocai: Vocab+AI - AI-powered vocabulary flashcard app with spaced repetition"
+authors = ["W9 Labs"]
+license = "MIT"
+
+[dependencies]
+axum = { version = "0.7", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+tokio-postgres = { version = "0.7", features = ["with-uuid-1"] }
+bb8 = "0.9"
+bb8-postgres = "0.9"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12", features = ["json"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "trace", "cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+dotenvy = "0.15"
+time = { version = "0.3", features = ["serde"] }
+rand = "0.9"
+sha2 = "0.10"
+hex = "0.4"
+cookie = { version = "0.18", features = ["private"] }

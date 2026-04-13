@@ -1,0 +1,36 @@
+# ============================================================
+# VOCAI: Vocab+AI — .gitignore
+# ============================================================
+
+# Build artifacts
+target/
+*.rs.bk
+*.pdb
+Cargo.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Uploads (if any)
+uploads/
+
+# Database
+*.db
+*.sqlite

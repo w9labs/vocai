@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Your Vocabulary Islands — learn words in context by topic.">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Vocabulary Islands — Vocai: Vocab+AI</title>
+    <link rel="icon" type="image/svg+xml" href="/w9-logo/logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/vocai.css">
+</head>
+<body>
+    <div class="page-wrapper">
+        <nav class="nav">
+            <div class="container nav__inner">
+                <a href="/" class="nav__logo">
+                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai Logo" />
+                    <span>Vocai</span>
+                </a>
+                <ul class="nav__links">
+                    <li><a href="/dashboard" class="nav__link">Dashboard</a></li>
+                    <li><a href="/flashcards" class="nav__link">Flashcards</a></li>
+                    <li><a href="/islands" class="nav__link" style="color: var(--secondary);">Islands</a></li>
+                    <li><a href="/review" class="nav__link">Review</a></li>
+                    <li><a href="/logout" class="btn btn--secondary btn--sm">Logout</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main>
+            <div class="container">
+                <div class="flex justify-between items-center mb-xl">
+                    <h1>🏝️ Vocabulary Islands</h1>
+                    <a href="/islands/new" class="btn btn--primary">Create New Island</a>
+                </div>
+
+                <p class="mb-lg">Focus on one topic at a time to see the same vocabulary reappear in different contexts.</p>
+
+                <div class="grid grid--3col" id="islands-container">
+                    <!-- Islands will be loaded here -->
+                    <div class="island-card">
+                        <h3>🍳 Cooking</h3>
+                        <p class="text-secondary mt-sm">25 words</p>
+                        <a href="/islands/cooking" class="btn btn--secondary btn--sm mt-md">Explore Island</a>
+                    </div>
+                    
+                    <div class="island-card">
+                        <h3>💼 Business</h3>
+                        <p class="text-secondary mt-sm">42 words</p>
+                        <a href="/islands/business" class="btn btn--secondary btn--sm mt-md">Explore Island</a>
+                    </div>
+
+                    <!-- Create New Card -->
+                    <div class="card" style="border-style: dashed; display: flex; align-items: center; justify-content: center; min-height: 200px;">
+                        <a href="/islands/new" class="text-center">
+                            <div style="font-size: 3rem;">+</div>
+                            <p class="mt-sm">Create New Island</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container footer__inner">
+                <div class="footer__logo">
+                    <img src="/w9-logo/workmark-transparent.svg" alt="W9 Labs" />
+                    <span>Built with 💜 by W9 Labs</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/assets/js/vocai.js"></script>
+</body>
+</html>

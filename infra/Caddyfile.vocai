@@ -1,0 +1,25 @@
+# ============================================================
+# CADDY CONFIGURATION FOR VOCAI
+# Add this to /etc/caddy/Caddyfile on the VPS
+# ============================================================
+
+vocai.top {
+    # TLS handled by Cloudflare (Full mode)
+    tls internal
+
+    # Reverse proxy to vocai container
+    reverse_proxy vocai:3010
+
+    # Logging
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}
+
+# Alternative: subdomain on w9.nu
+# vocai.w9.nu {
+#     tls internal
+#     reverse_proxy vocai:3010
+# }
