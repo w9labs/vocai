@@ -35,7 +35,7 @@ WORKDIR /app
 
 # Install runtime dependencies
 RUN apt-get update && \
-    apt-get install -y libssl3 ca-certificates && \
+    apt-get install -y libssl3 ca-certificates wget && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the binary from builder

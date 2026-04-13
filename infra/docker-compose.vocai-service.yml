@@ -1,0 +1,32 @@
+# ============================================================
+# VOCAI: Vocab+AI — Traefik Configuration
+# Add this service block to /opt/w9-labs/docker-compose.yml
+# ============================================================
+
+  vocai:
+    image: ghcr.io/w9labs/vocai:latest
+    container_name: vocai
+    restart: unless-stopped
+    depends_on:
+      w9-postgres:
+        condition: service_healthy
+    environment:
+      - PORT=3010
+      - RUST_LOG=info
+      - VOCAI_BASE_URL=https://vocai.top
+      - DATABASE_URL=postgres://w9_admin:${POSTGRES_PASSWORD}@w9-postgres:5432/w9_vocabai
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - ISSUER_URL=https://db.w9.nu
+      - OAUTH_CLIENT_ID=vocai
+      - OAUTH_CLIENT_SECRET=${VOCAI_OAUTH_SECRET}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vocai.rule=Host(`vocai.top`)"
+      - "traefik.http.routers.vocai.entrypoints=web"
+      - "traefik.http.services.vocai.loadbalancer.server.port=3010"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3010/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
