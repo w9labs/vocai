@@ -74,7 +74,7 @@ Return ONLY valid JSON array in this exact format:
   }}
 ]
 
-Ensure words are practical and related to the topic. Focus on contextual learning - words that appear together in real scenarios."#,
+Ensure words are practical and related to the topic. Focus on contextual learning."#,
             count, language, difficulty, topic
         );
 
@@ -94,7 +94,14 @@ Ensure words are practical and related to the topic. Focus on contextual learnin
             .post(format!("{}/chat/completions", self.base_url))
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
-            .json(&request_body)
+            .json(&serde_json::json!({
+                "model": "minimax/minimax-m2.7",
+                "messages": request_body.messages,
+                "temperature": request_body.temperature,
+                "top_p": request_body.top_p,
+                "max_tokens": request_body.max_tokens,
+                "stream": request_body.stream,
+            }))
             .send()
             .await?;
 
@@ -148,7 +155,14 @@ Focus on concrete, visual elements that can be easily illustrated."#,
             .post(format!("{}/chat/completions", self.base_url))
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
-            .json(&request_body)
+            .json(&serde_json::json!({
+                "model": "minimax/minimax-m2.7",
+                "messages": request_body.messages,
+                "temperature": request_body.temperature,
+                "top_p": request_body.top_p,
+                "max_tokens": request_body.max_tokens,
+                "stream": request_body.stream,
+            }))
             .send()
             .await?;
 
@@ -194,7 +208,14 @@ Keep it concise but comprehensive."#,
             .post(format!("{}/chat/completions", self.base_url))
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
-            .json(&request_body)
+            .json(&serde_json::json!({
+                "model": "minimax/minimax-m2.7",
+                "messages": request_body.messages,
+                "temperature": request_body.temperature,
+                "top_p": request_body.top_p,
+                "max_tokens": request_body.max_tokens,
+                "stream": request_body.stream,
+            }))
             .send()
             .await?;
 

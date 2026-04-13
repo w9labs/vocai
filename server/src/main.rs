@@ -3,6 +3,7 @@ use axum::{
     Router,
 };
 use tokio::net::TcpListener;
+use tower_http::services::{ServeDir, ServeFile};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod db;
@@ -26,8 +27,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let db_pool = db::init_pool(&db_url).await.expect("Failed to create DB pool");
-    
-    // Run migrations
+
     db::run_migrations(&db_pool).await.expect("Failed to run migrations");
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").expect("NVIDIA_API_KEY must be set");
@@ -39,45 +39,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let app = Router::new()
-        // Public routes
+        // API & dynamic routes (first = higher priority)
         .route("/", get(handlers::index))
         .route("/health", get(handlers::health))
         .route("/api/health", get(handlers::health))
-        
-        // Auth routes (OAuth via w9-db)
         .route("/login", get(handlers::auth::login))
         .route("/auth/callback", get(handlers::auth::callback))
         .route("/logout", get(handlers::auth::logout))
-        
-        // Dashboard (requires auth)
         .route("/dashboard", get(handlers::dashboard))
-        
-        // Flashcard routes
         .route("/flashcards", get(handlers::flashcards::list))
         .route("/flashcards/new", get(handlers::flashcards::new_form))
         .route("/flashcards/generate", post(handlers::flashcards::generate))
         .route("/flashcards/:id", get(handlers::flashcards::view))
         .route("/flashcards/:id/study", get(handlers::flashcards::study))
         .route("/flashcards/:id/review", post(handlers::flashcards::review))
-        
-        // Vocabulary Island routes
         .route("/islands", get(handlers::islands::list))
         .route("/islands/new", get(handlers::islands::new_form))
         .route("/islands", post(handlers::islands::create))
         .route("/islands/:id", get(handlers::islands::view))
-        
-        // SRS review session
         .route("/review", get(handlers::review::session))
         .route("/review/next", get(handlers::review::next_card))
         .route("/review/answer", post(handlers::review::answer))
-        
-        // Stats & profile
         .route("/stats", get(handlers::stats))
         .route("/profile", get(handlers::profile))
-        
-        // Static assets
-        .nest_service("/assets", tower_http::services::ServeDir::new("public"))
-        .fallback(get(handlers::not_found))
+
+        // Static files (fallback)
+        .route_service("/favicon.ico", ServeFile::new("public/w9-logo/logo.svg"))
+        .route_service("/favicon.svg", ServeFile::new("public/w9-logo/logo.svg"))
+        .nest_service("/assets", ServeDir::new("public/assets"))
+        .nest_service("/w9-logo", ServeDir::new("public/w9-logo"))
+        .fallback_service(ServeDir::new("public"))
         .with_state(app_state);
 
     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
