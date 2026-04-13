@@ -38,16 +38,19 @@ pub async fn callback(
     match response {
         Ok(resp) => {
             if let Ok(token_data) = resp.json::<serde_json::Value>().await {
-                tracing::info!("Token received successfully");
-                let user_id = token_data.get("user_id")
+                tracing::info!("Token received: {}", token_data);
+                // Try multiple field names (OIDC standard vs w9-db custom)
+                let user_id = token_data.get("sub")
+                    .or_else(|| token_data.get("user_id"))
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 
                 if let Ok(uid) = uuid::Uuid::parse_str(user_id) {
+                    tracing::info!("Auth successful, user_id={}", uid);
                     crate::session::create_session_cookie(uid);
                     return (StatusCode::FOUND, axum::response::Redirect::to("/dashboard")).into_response();
                 } else {
-                    tracing::error!("Invalid user_id in token response");
+                    tracing::error!("Invalid user_id in token response: '{}'", user_id);
                     (StatusCode::INTERNAL_SERVER_ERROR, "Authentication failed").into_response()
                 }
             } else {
