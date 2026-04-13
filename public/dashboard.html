@@ -5,22 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Your Vocai dashboard — track vocabulary learning progress, start review sessions, and manage flashcards.">
     <meta name="robots" content="noindex, nofollow">
-    <title>Dashboard — Vocai: Vocab+AI</title>
+    <title>Dashboard — Vocai</title>
     <link rel="icon" type="image/svg+xml" href="/w9-logo/logo.svg">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/vocai.css">
 </head>
 <body>
     <div class="page-wrapper">
-        <!-- Navigation -->
         <nav class="nav">
             <div class="container nav__inner">
                 <a href="/" class="nav__logo">
-                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai Logo" />
+                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai" />
                     <span>Vocai</span>
                 </a>
                 <ul class="nav__links">
-                    <li><a href="/dashboard" class="nav__link" style="color: var(--secondary);">Dashboard</a></li>
+                    <li><a href="/dashboard" class="nav__link" style="color:var(--secondary)">Dashboard</a></li>
                     <li><a href="/flashcards" class="nav__link">Flashcards</a></li>
                     <li><a href="/islands" class="nav__link">Islands</a></li>
                     <li><a href="/review" class="nav__link">Review</a></li>
@@ -30,58 +29,47 @@
             </div>
         </nav>
 
-        <!-- Dashboard -->
         <main>
             <div class="container">
-                <h1>Welcome back! 👋</h1>
-                
-                <!-- Quick Stats -->
+                <h1>Welcome back 👋</h1>
+
                 <div class="grid grid--4col mb-xl">
                     <div class="stats-card">
-                        <div class="stats-card__value" id="stat-due-cards">0</div>
+                        <div class="stats-card__value" id="stat-due" style="color:var(--warning)">0</div>
                         <div class="stats-card__label">Cards Due</div>
                     </div>
                     <div class="stats-card">
-                        <div class="stats-card__value" id="stat-total-cards">0</div>
+                        <div class="stats-card__value" id="stat-total" style="color:var(--primary-light)">0</div>
                         <div class="stats-card__label">Total Cards</div>
                     </div>
                     <div class="stats-card">
-                        <div class="stats-card__value" id="stat-mastered">0</div>
+                        <div class="stats-card__value" id="stat-mastered" style="color:var(--success)">0</div>
                         <div class="stats-card__label">Mastered</div>
                     </div>
                     <div class="stats-card">
-                        <div class="stats-card__value" id="stat-streak">0</div>
+                        <div class="stats-card__value" id="stat-streak" style="color:var(--voxel-yellow)">0</div>
                         <div class="stats-card__label">Day Streak 🔥</div>
                     </div>
                 </div>
 
-                <!-- Quick Actions -->
                 <div class="card mb-xl">
                     <h2>Quick Actions</h2>
                     <div class="grid grid--3col mt-md">
-                        <a href="/review" class="btn btn--primary btn--lg">
-                            🎯 Start Review Session
-                        </a>
-                        <a href="/flashcards/new" class="btn btn--secondary btn--lg">
-                            ✨ Generate AI Flashcards
-                        </a>
-                        <a href="/islands/new" class="btn btn--secondary btn--lg">
-                            🏝️ Create Vocabulary Island
-                        </a>
+                        <a href="/review" class="btn btn--primary btn--lg">🎯 Start Review</a>
+                        <a href="/flashcards/new" class="btn btn--secondary btn--lg">✨ AI Flashcards</a>
+                        <a href="/islands/new" class="btn btn--secondary btn--lg">🏝️ New Island</a>
                     </div>
                 </div>
 
-                <!-- Due for Review -->
                 <div class="card">
                     <h2>📚 Due for Review</h2>
-                    <div id="due-cards-container" class="mt-md">
-                        <p class="text-secondary">Loading due cards...</p>
+                    <div id="due-cards" class="mt-md">
+                        <p class="text-secondary">Loading...</p>
                     </div>
                 </div>
             </div>
         </main>
 
-        <!-- Footer -->
         <footer class="footer">
             <div class="container footer__inner">
                 <div class="footer__logo">
@@ -93,19 +81,14 @@
     </div>
 
     <script>
-        // Load dashboard stats
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const response = await fetch('/stats');
-                const stats = await response.json();
-                
-                document.getElementById('stat-due-cards').textContent = stats.due_count || 0;
-                document.getElementById('stat-total-cards').textContent = stats.total_cards || 0;
-                document.getElementById('stat-mastered').textContent = stats.mastered_words || 0;
-                document.getElementById('stat-streak').textContent = stats.current_streak || 0;
-            } catch (error) {
-                console.error('Failed to load stats:', error);
-            }
+                const s = await (await fetch('/stats')).json();
+                document.getElementById('stat-due').textContent = s.due_count || 0;
+                document.getElementById('stat-total').textContent = s.total_cards || 0;
+                document.getElementById('stat-mastered').textContent = s.mastered_words || 0;
+                document.getElementById('stat-streak').textContent = s.current_streak || 0;
+            } catch(e) { console.error(e); }
         });
     </script>
 </body>

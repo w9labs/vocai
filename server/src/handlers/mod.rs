@@ -14,21 +14,40 @@ use crate::models::AppState;
 
 pub async fn index() -> impl IntoResponse {
     match fs::read_to_string("public/index.html").await {
-        Ok(content) => Html(content).into_response(),
-        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Failed to load page").into_response(),
+        Ok(c) => Html(c),
+        Err(_) => Html("<h1>Loading...</h1>".into()),
     }
 }
 
-pub async fn serve_page(page: &str) -> impl IntoResponse {
+async fn serve_html(page: &str) -> axum::response::Response {
     let path = format!("public/{}.html", page);
     match fs::read_to_string(&path).await {
-        Ok(content) => Html(content).into_response(),
-        Err(_) => (StatusCode::NOT_FOUND, "Page not found").into_response(),
+        Ok(c) => Html(c).into_response(),
+        Err(e) => {
+            tracing::error!("Failed to load {}: {}", page, e);
+            (StatusCode::NOT_FOUND, Html("Page not found")).into_response()
+        }
     }
 }
 
-pub async fn dashboard(State(_state): State<AppState>) -> impl IntoResponse {
-    serve_page("dashboard").await
+pub async fn dashboard(State(_state): State<AppState>) -> axum::response::Response {
+    serve_html("dashboard").await
+}
+
+pub async fn flashcards_page(State(_state): State<AppState>) -> axum::response::Response {
+    serve_html("flashcards").await
+}
+
+pub async fn flashcards_new_page(State(_state): State<AppState>) -> axum::response::Response {
+    serve_html("flashcards-new").await
+}
+
+pub async fn islands_page(State(_state): State<AppState>) -> axum::response::Response {
+    serve_html("islands").await
+}
+
+pub async fn review_page(State(_state): State<AppState>) -> axum::response::Response {
+    serve_html("review").await
 }
 
 pub async fn stats(State(_state): State<AppState>) -> impl IntoResponse {

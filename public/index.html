@@ -4,77 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Vocai: AI-powered vocabulary learning with spaced repetition. Generate flashcards with AI, master words with SRS, learn in context with Vocabulary Islands.">
-    <meta name="keywords" content="vocabulary, flashcards, spaced repetition, AI learning, language learning, SRS, Leitner system, memory retention">
+    <meta name="keywords" content="vocabulary, flashcards, spaced repetition, AI learning, language learning, SRS, Leitner system">
     <meta name="author" content="W9 Labs">
     <meta name="robots" content="index, follow">
-    
-    <!-- Open Graph -->
     <meta property="og:title" content="Vocai: Vocab+AI — Learn Vocabulary with AI & Spaced Repetition">
-    <meta property="og:description" content="AI-powered flashcards, spaced repetition system, and contextual vocabulary learning. Master new words faster with smart technology.">
+    <meta property="og:description" content="AI-powered flashcards, spaced repetition, and contextual vocabulary learning.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://vocai.top">
-    <meta property="og:image" content="https://vocai.top/assets/og-image.png">
-    
-    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Vocai: Vocab+AI">
-    <meta name="twitter:description" content="AI-powered vocabulary learning with spaced repetition">
-    
     <title>Vocai: Vocab+AI — Learn Vocabulary with AI & Spaced Repetition</title>
     <link rel="icon" type="image/svg+xml" href="/w9-logo/logo.svg">
-    
-    <!-- Fonts: 2026 Trending -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    
-    <!-- Styles -->
     <link rel="stylesheet" href="/assets/css/vocai.css">
-    
-    <!-- Structured Data for SEO -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "Vocai: Vocab+AI",
-        "url": "https://vocai.top",
-        "description": "AI-powered vocabulary learning app with spaced repetition and flashcard generation",
-        "applicationCategory": "EducationalApplication",
-        "operatingSystem": "Web",
-        "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "USD"
-        },
-        "author": {
-            "@type": "Organization",
-            "name": "W9 Labs",
-            "url": "https://w9.nu"
-        }
-    }
-    </script>
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Vocai: Vocab+AI","url":"https://vocai.top","description":"AI-powered vocabulary learning app with spaced repetition","applicationCategory":"EducationalApplication","author":{"@type":"Organization","name":"W9 Labs","url":"https://w9.nu"}}</script>
 </head>
 <body>
     <div class="page-wrapper">
-        <!-- Navigation -->
         <nav class="nav">
             <div class="container nav__inner">
                 <a href="/" class="nav__logo">
-                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai Logo" />
+                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai" />
                     <span>Vocai</span>
                 </a>
                 <ul class="nav__links">
-                    <li><a href="/dashboard" class="nav__link">Dashboard</a></li>
                     <li><a href="/flashcards" class="nav__link">Flashcards</a></li>
                     <li><a href="/islands" class="nav__link">Islands</a></li>
                     <li><a href="/review" class="nav__link">Review</a></li>
-                    <li><a href="/stats" class="nav__link">Stats</a></li>
                     <li><a href="/login" class="btn btn--primary btn--sm">Login with W9</a></li>
                 </ul>
             </div>
         </nav>
 
-        <!-- Hero Section -->
         <section class="hero">
             <div class="container">
                 <img src="/w9-logo/logo.svg" alt="Vocai" class="hero__logo" />
@@ -87,63 +47,30 @@
             </div>
         </section>
 
-        <!-- Features Section -->
         <main id="features">
             <div class="container">
                 <h2 class="text-center mb-xl">Why Vocai?</h2>
                 <div class="grid grid--3col">
-                    <div class="card">
-                        <h3>🤖 AI Flashcards</h3>
-                        <p>Generate vocabulary flashcards instantly with NVIDIA AI. Get definitions, example sentences, phonetics, and visual mnemonics.</p>
-                    </div>
-                    <div class="card">
-                        <h3>🧠 Spaced Repetition</h3>
-                        <p>Hybrid SM-2 + Leitner algorithm schedules reviews at optimal intervals. Focus on hard words, maintain mastered ones.</p>
-                    </div>
-                    <div class="card">
-                        <h3>🏝️ Vocabulary Islands</h3>
-                        <p>Learn words in context by topic. Cooking, politics, tech, business — see the same vocabulary reappear naturally.</p>
-                    </div>
-                    <div class="card">
-                        <h3>📊 Smart Analytics</h3>
-                        <p>Track your progress, learning streaks, mastered words, and review history. See your growth over time.</p>
-                    </div>
-                    <div class="card">
-                        <h3>🎯 Active Recall</h3>
-                        <p>Apply new words immediately through speaking prompts, writing exercises, and contextual scenarios.</p>
-                    </div>
-                    <div class="card">
-                        <h3>🔐 Secure & Private</h3>
-                        <p>OAuth 2.0 authentication via W9 Labs. Your data is encrypted and never shared with third parties.</p>
-                    </div>
+                    <div class="card"><h3>🤖 AI Flashcards</h3><p class="text-secondary">Generate flashcards with MiniMax M2.7 — definitions, examples, phonetics, and visual mnemonics.</p></div>
+                    <div class="card"><h3>🧠 Spaced Repetition</h3><p class="text-secondary">Hybrid SM-2 + Leitner algorithm schedules reviews at optimal intervals for maximum retention.</p></div>
+                    <div class="card"><h3>🏝️ Vocabulary Islands</h3><p class="text-secondary">Learn words in context by topic. Cooking, politics, tech — see vocabulary reappear naturally.</p></div>
+                    <div class="card"><h3>📊 Smart Analytics</h3><p class="text-secondary">Track progress, learning streaks, mastered words, and review history over time.</p></div>
+                    <div class="card"><h3>🎯 Active Recall</h3><p class="text-secondary">Apply new words immediately through speaking prompts, writing, and contextual scenarios.</p></div>
+                    <div class="card"><h3>🔐 Secure & Private</h3><p class="text-secondary">OAuth 2.0 via W9 Labs. Your data is encrypted and never shared with third parties.</p></div>
                 </div>
 
-                <!-- Learning Methods -->
                 <div class="mt-2xl">
                     <h2 class="text-center mb-lg">Proven Learning Methods</h2>
                     <div class="grid grid--2col">
-                        <div class="card card--voxel">
-                            <h3 style="color: var(--voxel-yellow);">The Leitner System</h3>
-                            <p>Physical flashcard method that moves mastered words into less frequent review piles. Vocai digitizes this with 5 boxes: Daily → 3 days → Weekly → Bi-weekly → Monthly.</p>
-                        </div>
-                        <div class="card card--voxel">
-                            <h3 style="color: var(--voxel-yellow);">Contextual Learning</h3>
-                            <p>Learn words within phrases and full sentences to understand usage, not isolated definitions. Every flashcard includes real-world example sentences.</p>
-                        </div>
-                        <div class="card card--voxel">
-                            <h3 style="color: var(--voxel-yellow);">Vocabulary Island Technique</h3>
-                            <p>Focus on one topic at a time to see the same vocabulary reappear in different contexts. Build thematic word collections naturally.</p>
-                        </div>
-                        <div class="card card--voxel">
-                            <h3 style="color: var(--voxel-yellow);">Mnemonics & Visual Memory</h3>
-                            <p>AI generates image prompts and mental associations to connect new words to familiar concepts. Visual learning boosts retention by 65%.</p>
-                        </div>
+                        <div class="card card--voxel"><h3 style="color:var(--voxel-yellow)">The Leitner System</h3><p class="text-secondary">Mastered words move to less frequent review boxes. 5 levels: Daily → 3d → Weekly → Biweekly → Monthly.</p></div>
+                        <div class="card card--voxel"><h3 style="color:var(--voxel-yellow)">Contextual Learning</h3><p class="text-secondary">Learn words within phrases and sentences. Every flashcard includes real-world example sentences.</p></div>
+                        <div class="card card--voxel"><h3 style="color:var(--voxel-yellow)">Vocabulary Island</h3><p class="text-secondary">Focus on one topic at a time. Build thematic word collections that reinforce each other.</p></div>
+                        <div class="card card--voxel"><h3 style="color:var(--voxel-yellow)">Mnemonics</h3><p class="text-secondary">AI generates image prompts and mental associations. Visual learning boosts retention by 65%.</p></div>
                     </div>
                 </div>
             </div>
         </main>
 
-        <!-- Footer -->
         <footer class="footer">
             <div class="container footer__inner">
                 <div class="footer__logo">
@@ -153,13 +80,9 @@
                 <ul class="footer__links">
                     <li><a href="https://w9.nu" target="_blank">W9 Network</a></li>
                     <li><a href="https://github.com/w9labs/vocai" target="_blank">GitHub</a></li>
-                    <li><a href="/privacy">Privacy</a></li>
-                    <li><a href="/terms">Terms</a></li>
                 </ul>
             </div>
         </footer>
     </div>
-
-    <script src="/assets/js/vocai.js"></script>
 </body>
 </html>

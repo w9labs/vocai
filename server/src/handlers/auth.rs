@@ -1,87 +1,107 @@
 use axum::{
-    http::StatusCode,
-    response::IntoResponse,
+    http::{header, HeaderValue, StatusCode},
+    response::{IntoResponse, Redirect},
+    extract::Query,
 };
+use cookie::Cookie;
 use serde::Deserialize;
 use tracing;
+
+const W9_DB_URL: &str = "https://db.w9.nu";
 
 #[derive(Deserialize)]
 pub struct OAuthCallback {
     pub code: String,
-    pub state: Option<String>,
-}
-
-pub async fn callback(
-    axum::extract::Query(params): axum::extract::Query<OAuthCallback>,
-) -> impl IntoResponse {
-    tracing::info!("OAuth callback received with code: {}", params.code);
-
-    let issuer_url = std::env::var("ISSUER_URL").unwrap_or_else(|_| "https://db.w9.nu".to_string());
-    let token_url = format!("{}/oauth/token", issuer_url);
-    
-    let client = reqwest::Client::new();
-    
-    let response = client
-        .post(&token_url)
-        .form(&[
-            ("grant_type", "authorization_code"),
-            ("code", &params.code),
-            ("redirect_uri", &format!("{}/auth/callback", vocai_base_url())),
-        ])
-        .basic_auth(
-            std::env::var("OAUTH_CLIENT_ID").unwrap_or_else(|_| "vocai".to_string()),
-            Some(std::env::var("OAUTH_CLIENT_SECRET").unwrap_or_else(|_| "secret".to_string())),
-        )
-        .send()
-        .await;
-
-    match response {
-        Ok(resp) => {
-            if let Ok(token_data) = resp.json::<serde_json::Value>().await {
-                tracing::info!("Token received: {}", token_data);
-                // Try multiple field names (OIDC standard vs w9-db custom)
-                let user_id = token_data.get("sub")
-                    .or_else(|| token_data.get("user_id"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
-                
-                if let Ok(uid) = uuid::Uuid::parse_str(user_id) {
-                    tracing::info!("Auth successful, user_id={}", uid);
-                    crate::session::create_session_cookie(uid);
-                    return (StatusCode::FOUND, axum::response::Redirect::to("/dashboard")).into_response();
-                } else {
-                    tracing::error!("Invalid user_id in token response: '{}'", user_id);
-                    (StatusCode::INTERNAL_SERVER_ERROR, "Authentication failed").into_response()
-                }
-            } else {
-                tracing::error!("Failed to parse token response");
-                (StatusCode::INTERNAL_SERVER_ERROR, "Authentication failed").into_response()
-            }
-        }
-        Err(e) => {
-            tracing::error!("Token exchange failed: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "Authentication failed").into_response()
-        }
-    }
 }
 
 pub async fn login() -> impl IntoResponse {
-    let issuer_url = std::env::var("ISSUER_URL").unwrap_or_else(|_| "https://db.w9.nu".to_string());
     let oauth_url = format!(
-        "{}/oauth/authorize?client_id={}&redirect_uri={}&response_type=code&scope=openid+profile+email",
-        issuer_url,
-        std::env::var("OAUTH_CLIENT_ID").unwrap_or_else(|_| "vocai".to_string()),
-        format!("{}/auth/callback", vocai_base_url()),
+        "{}/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai",
+        W9_DB_URL,
     );
-    
     tracing::info!("Redirecting to OAuth: {}", oauth_url);
-    (StatusCode::FOUND, axum::response::Redirect::to(&oauth_url)).into_response()
+    Redirect::to(&oauth_url).into_response()
+}
+
+pub async fn callback(Query(q): Query<OAuthCallback>) -> impl IntoResponse {
+    tracing::info!("OAuth callback received, code: {}", q.code);
+
+    let client = reqwest::Client::new();
+    let res = match client
+        .post(format!("{}/oauth/token", W9_DB_URL))
+        .form(&[
+            ("grant_type", "authorization_code"),
+            ("code", &q.code),
+            ("redirect_uri", "https://vocai.top/oauth/callback"),
+        ])
+        .send()
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::error!("Token exchange failed: {}", e);
+            let oauth_url = format!("{}/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai", W9_DB_URL);
+            return Redirect::to(&oauth_url).into_response();
+        }
+    };
+
+    let json = match res.json::<serde_json::Value>().await {
+        Ok(j) => j,
+        Err(e) => {
+            tracing::error!("Failed to parse token response: {}", e);
+            let oauth_url = format!("{}/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai", W9_DB_URL);
+            return Redirect::to(&oauth_url).into_response();
+        }
+    };
+
+    let token = match json.get("access_token").and_then(|v| v.as_str()) {
+        Some(t) => t.to_string(),
+        None => {
+            tracing::error!("No access_token in response: {}", json);
+            let oauth_url = format!("{}/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai", W9_DB_URL);
+            return Redirect::to(&oauth_url).into_response();
+        }
+    };
+
+    tracing::info!("Auth successful, setting session cookie");
+
+    let mut response = Redirect::to("/dashboard").into_response();
+    let mut cookie = Cookie::new("vocai_session", token);
+    cookie.set_path("/");
+    cookie.set_http_only(true);
+    cookie.set_secure(true);
+    cookie.set_same_site(cookie::SameSite::Lax);
+    cookie.set_max_age(time::Duration::days(7));
+    response.headers_mut().insert(
+        header::SET_COOKIE,
+        HeaderValue::from_str(&cookie.to_string()).unwrap(),
+    );
+    response
 }
 
 pub async fn logout() -> impl IntoResponse {
-    crate::session::clear_session_cookie()
+    let mut response = Redirect::to("/").into_response();
+    let mut cookie = Cookie::new("vocai_session", "");
+    cookie.set_path("/");
+    cookie.set_http_only(true);
+    cookie.set_secure(true);
+    cookie.set_same_site(cookie::SameSite::Lax);
+    cookie.set_max_age(time::Duration::seconds(0));
+    response.headers_mut().insert(
+        header::SET_COOKIE,
+        HeaderValue::from_str(&cookie.to_string()).unwrap(),
+    );
+    response
 }
 
-fn vocai_base_url() -> String {
-    std::env::var("VOCAI_BASE_URL").unwrap_or_else(|_| "https://vocai.top".to_string())
+pub fn get_session_token(headers: &axum::http::HeaderMap) -> Option<String> {
+    let cookie_header = headers.get(header::COOKIE)?;
+    let cookie_str = cookie_header.to_str().ok()?;
+    for cookie in cookie_str.split(';') {
+        let c = cookie.trim();
+        if c.starts_with("vocai_session=") {
+            return Some(c.trim_start_matches("vocai_session=").to_string());
+        }
+    }
+    None
 }

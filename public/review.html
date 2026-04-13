@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Review your vocabulary flashcards with spaced repetition. Master words efficiently with SRS algorithm.">
+    <meta name="description" content="Review your vocabulary flashcards with spaced repetition.">
     <meta name="robots" content="noindex, nofollow">
-    <title>Review Session — Vocai: Vocab+AI</title>
+    <title>Review — Vocai</title>
     <link rel="icon" type="image/svg+xml" href="/w9-logo/logo.svg">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/vocai.css">
@@ -15,14 +15,14 @@
         <nav class="nav">
             <div class="container nav__inner">
                 <a href="/" class="nav__logo">
-                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai Logo" />
+                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai" />
                     <span>Vocai</span>
                 </a>
                 <ul class="nav__links">
                     <li><a href="/dashboard" class="nav__link">Dashboard</a></li>
                     <li><a href="/flashcards" class="nav__link">Flashcards</a></li>
                     <li><a href="/islands" class="nav__link">Islands</a></li>
-                    <li><a href="/review" class="nav__link" style="color: var(--secondary);">Review</a></li>
+                    <li><a href="/review" class="nav__link" style="color:var(--secondary)">Review</a></li>
                     <li><a href="/logout" class="btn btn--secondary btn--sm">Logout</a></li>
                 </ul>
             </div>
@@ -33,44 +33,62 @@
                 <div class="flex justify-between items-center mb-lg">
                     <div>
                         <h1>🎯 Review Session</h1>
-                        <p>Master your vocabulary with spaced repetition</p>
+                        <p class="text-secondary">SM-2 + Leitner spaced repetition</p>
                     </div>
-                    <div class="badge badge--info">
-                        <span id="cards-remaining">0</span> cards remaining
+                    <div class="badge badge--info"><span id="cards-left">0</span> remaining</div>
+                </div>
+
+                <!-- Flashcard -->
+                <div id="flashcard-container">
+                    <div class="card text-center" style="padding:var(--space-2xl); min-height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center">
+                        <div class="loading">
+                            <div class="loading__spinner"></div>
+                            <p>Loading review...</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Flashcard Container -->
-                <div id="flashcard-container" class="mt-lg">
-                    <div class="loading">
-                        <div class="loading__spinner"></div>
-                        <p>Loading review session...</p>
-                    </div>
-                </div>
-
-                <!-- Progress Bar -->
+                <!-- Progress -->
                 <div class="mt-xl">
-                    <div style="background: var(--bg-elevated); border-radius: var(--radius-md); height: 8px; overflow: hidden;">
-                        <div id="progress-bar" style="background: linear-gradient(90deg, var(--primary), var(--secondary)); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                    <div style="background:var(--bg-elevated); border-radius:var(--radius-md); height:8px; overflow:hidden">
+                        <div id="progress" style="background:linear-gradient(90deg,var(--primary),var(--secondary)); height:100%; width:0%; transition:width .3s"></div>
                     </div>
-                    <p class="text-center text-secondary mt-sm">
-                        <span id="cards-reviewed">0</span> / <span id="cards-total">0</span> reviewed
-                    </p>
+                    <p class="text-center text-secondary mt-sm"><span id="done">0</span> / <span id="total">0</span> reviewed</p>
                 </div>
 
-                <!-- Session Stats -->
+                <!-- Session stats -->
                 <div class="grid grid--3col mt-xl">
                     <div class="stats-card">
-                        <div class="stats-card__value" id="stat-correct" style="color: var(--success);">0</div>
-                        <div class="stats-card__label">Correct</div>
+                        <div class="stats-card__value" id="stat-correct" style="color:var(--success)">0</div>
+                        <div class="stats-card__label">Correct ✓</div>
                     </div>
                     <div class="stats-card">
-                        <div class="stats-card__value" id="stat-incorrect" style="color: var(--error);">0</div>
-                        <div class="stats-card__label">Incorrect</div>
+                        <div class="stats-card__value" id="stat-wrong" style="color:var(--error)">0</div>
+                        <div class="stats-card__label">Again ✗</div>
                     </div>
                     <div class="stats-card">
-                        <div class="stats-card__value" id="stat-accuracy">0%</div>
+                        <div class="stats-card__value" id="stat-acc">0%</div>
                         <div class="stats-card__label">Accuracy</div>
+                    </div>
+                </div>
+
+                <div class="card mt-xl">
+                    <h2>How Review Works</h2>
+                    <div class="grid grid--2col mt-md">
+                        <div>
+                            <h4 style="color:var(--primary-light)">SM-2 Algorithm</h4>
+                            <p class="text-secondary">Adjusts intervals based on how well you recall. Hard words come back sooner, easy words wait longer.</p>
+                        </div>
+                        <div>
+                            <h4 style="color:var(--primary-light)">Leitner Boxes</h4>
+                            <p class="text-secondary">Words move through 5 boxes: Daily → 3d → Weekly → Biweekly → Monthly. Wrong answers reset to box 1.</p>
+                        </div>
+                    </div>
+                    <div class="review-buttons mt-md">
+                        <div class="text-center"><span class="leitner-box leitner-box--1">Again 1m</span><p class="text-secondary mt-xs" style="font-size:.85rem">Forgot</p></div>
+                        <div class="text-center"><span class="leitner-box leitner-box--2">Hard 3d</span><p class="text-secondary mt-xs" style="font-size:.85rem">Struggled</p></div>
+                        <div class="text-center"><span class="leitner-box leitner-box--3">Good 7d</span><p class="text-secondary mt-xs" style="font-size:.85rem">Remembered</p></div>
+                        <div class="text-center"><span class="leitner-box leitner-box--5">Easy 30d</span><p class="text-secondary mt-xs" style="font-size:.85rem">Trivial</p></div>
                     </div>
                 </div>
             </div>
@@ -85,30 +103,16 @@
             </div>
         </footer>
     </div>
-
     <script src="/assets/js/vocai.js"></script>
     <script>
-        // Track session stats
-        let sessionStats = { correct: 0, incorrect: 0, total: 0 };
-
-        // Override submitReview to track stats
-        const originalSubmitReview = flashcardManager.submitReview.bind(flashcardManager);
-        flashcardManager.submitReview = async function(quality) {
-            sessionStats.total++;
-            if (quality >= 3) {
-                sessionStats.correct++;
-            } else {
-                sessionStats.incorrect++;
-            }
-
-            // Update UI
-            document.getElementById('stat-correct').textContent = sessionStats.correct;
-            document.getElementById('stat-incorrect').textContent = sessionStats.incorrect;
-            const accuracy = Math.round((sessionStats.correct / sessionStats.total) * 100);
-            document.getElementById('stat-accuracy').textContent = accuracy + '%';
-
-            await originalSubmitReview(quality);
-        };
+        let S={c:0,w:0,t:0};
+        function upd(){
+            document.getElementById('stat-correct').textContent=S.c;
+            document.getElementById('stat-wrong').textContent=S.w;
+            document.getElementById('stat-acc').textContent=S.t?Math.round(S.c/S.t*100)+'%':'0%';
+            document.getElementById('done').textContent=S.t;
+            document.getElementById('cards-left').textContent=0;
+        }
     </script>
 </body>
 </html>

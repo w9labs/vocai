@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Generate AI-powered vocabulary flashcards with NVIDIA. Choose topic, difficulty, and language.">
+    <meta name="description" content="Generate AI-powered vocabulary flashcards with NVIDIA AI.">
     <meta name="robots" content="noindex, nofollow">
-    <title>Generate Flashcards — Vocai: Vocab+AI</title>
+    <title>Generate Flashcards — Vocai</title>
     <link rel="icon" type="image/svg+xml" href="/w9-logo/logo.svg">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/vocai.css">
@@ -15,12 +15,12 @@
         <nav class="nav">
             <div class="container nav__inner">
                 <a href="/" class="nav__logo">
-                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai Logo" />
+                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai" />
                     <span>Vocai</span>
                 </a>
                 <ul class="nav__links">
                     <li><a href="/dashboard" class="nav__link">Dashboard</a></li>
-                    <li><a href="/flashcards" class="nav__link" style="color: var(--secondary);">Flashcards</a></li>
+                    <li><a href="/flashcards" class="nav__link">Flashcards</a></li>
                     <li><a href="/islands" class="nav__link">Islands</a></li>
                     <li><a href="/review" class="nav__link">Review</a></li>
                     <li><a href="/logout" class="btn btn--secondary btn--sm">Logout</a></li>
@@ -31,31 +31,26 @@
         <main>
             <div class="container">
                 <h1>✨ Generate AI Flashcards</h1>
-                <p class="mb-lg">Powered by NVIDIA AI — generate vocabulary flashcards instantly</p>
+                <p class="mb-lg text-secondary">Powered by MiniMax M2.7 via NVIDIA — generate vocabulary flashcards instantly</p>
 
                 <div class="grid grid--2col">
-                    <!-- Generation Form -->
                     <div class="card">
                         <h2>Settings</h2>
                         <form id="generate-form" class="mt-md">
                             <div class="form-group">
-                                <label class="form-label" for="topic">Topic or Theme *</label>
+                                <label class="form-label" for="topic">Topic *</label>
                                 <input type="text" id="topic" name="topic" class="form-input" placeholder="e.g., Cooking, Business, Travel" required />
-                                <small class="text-secondary">What vocabulary topic do you want to learn?</small>
                             </div>
-
                             <div class="form-group">
-                                <label class="form-label" for="count">Number of Words</label>
+                                <label class="form-label" for="count">Words</label>
                                 <select id="count" name="count" class="form-select">
-                                    <option value="5">5 words (Quick session)</option>
-                                    <option value="10" selected>10 words (Recommended)</option>
-                                    <option value="20">20 words (Deep dive)</option>
-                                    <option value="30">30 words (Intensive)</option>
+                                    <option value="5">5 (Quick)</option>
+                                    <option value="10" selected>10 (Recommended)</option>
+                                    <option value="20">20 (Deep dive)</option>
                                 </select>
                             </div>
-
                             <div class="form-group">
-                                <label class="form-label" for="language">Target Language</label>
+                                <label class="form-label" for="language">Language</label>
                                 <select id="language" name="language" class="form-select">
                                     <option value="English" selected>English</option>
                                     <option value="Spanish">Spanish</option>
@@ -64,56 +59,37 @@
                                     <option value="Chinese">Chinese</option>
                                     <option value="Japanese">Japanese</option>
                                     <option value="Korean">Korean</option>
-                                    <option value="Vietnamese">Vietnamese</option>
                                 </select>
                             </div>
-
                             <div class="form-group">
-                                <label class="form-label" for="difficulty">Difficulty Level</label>
+                                <label class="form-label" for="difficulty">Difficulty</label>
                                 <select id="difficulty" name="difficulty" class="form-select">
                                     <option value="beginner">Beginner (A1-A2)</option>
                                     <option value="intermediate" selected>Intermediate (B1-B2)</option>
                                     <option value="advanced">Advanced (C1-C2)</option>
                                 </select>
                             </div>
-
-                            <button type="submit" class="btn btn--primary btn--lg mt-md">
-                                🤖 Generate Flashcards
-                            </button>
+                            <button type="submit" class="btn btn--primary btn--lg mt-md">🤖 Generate</button>
                         </form>
                     </div>
 
-                    <!-- Generated Cards Container -->
                     <div>
                         <div id="generated-cards-container">
-                            <div class="card text-center" style="opacity: 0.6;">
-                                <h3>🎯 Ready to Generate</h3>
-                                <p class="mt-sm">Fill out the form and click generate to create AI-powered flashcards</p>
+                            <div class="card text-center" style="opacity:0.6">
+                                <h3>🎯 Ready</h3>
+                                <p class="mt-sm text-secondary">Fill out the form to generate</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Learning Tips -->
                 <div class="card mt-xl">
-                    <h2>💡 Tips for Effective Vocabulary Learning</h2>
+                    <h2>💡 Tips</h2>
                     <div class="grid grid--2col mt-md">
-                        <div>
-                            <h4 style="color: var(--secondary);">Contextual Learning</h4>
-                            <p>Learn words within phrases or full sentences to understand usage, rather than isolated definitions.</p>
-                        </div>
-                        <div>
-                            <h4 style="color: var(--secondary);">Active Recall & Output</h4>
-                            <p>Immediately apply new words by speaking, writing, or creating scenarios that link the word to your life.</p>
-                        </div>
-                        <div>
-                            <h4 style="color: var(--secondary);">Spaced Repetition</h4>
-                            <p>Use the SRS system to automatically schedule reviews, optimizing memory retention over time.</p>
-                        </div>
-                        <div>
-                            <h4 style="color: var(--secondary);">Mnemonics</h4>
-                            <p>Create mental images, stories, or acronyms to connect new words to familiar concepts.</p>
-                        </div>
+                        <div><h4 style="color:var(--secondary)">Contextual Learning</h4><p class="text-secondary">Learn words in sentences, not isolated definitions.</p></div>
+                        <div><h4 style="color:var(--secondary)">Active Recall</h4><p class="text-secondary">Use new words immediately in speaking or writing.</p></div>
+                        <div><h4 style="color:var(--secondary)">Spaced Repetition</h4><p class="text-secondary">SRS schedules reviews at optimal intervals.</p></div>
+                        <div><h4 style="color:var(--secondary)">Mnemonics</h4><p class="text-secondary">Create mental images to connect new words.</p></div>
                     </div>
                 </div>
             </div>
@@ -128,7 +104,6 @@
             </div>
         </footer>
     </div>
-
     <script src="/assets/js/vocai.js"></script>
 </body>
 </html>
