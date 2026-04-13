@@ -1,25 +1,13 @@
 # ============================================================
-# CADDY CONFIGURATION FOR VOCAI
-# Add this to /etc/caddy/Caddyfile on the VPS
+# VOCAI: Vocab+AI — Caddy Route
+# Already added on VPS at /etc/caddy/Caddyfile
+#
+# TLS: self-signed (tls internal) — Cloudflare handles public SSL
+# Flow: User → HTTPS → Cloudflare → HTTP → Caddy → vocai:3010
 # ============================================================
 
 vocai.top {
-    # TLS handled by Cloudflare (Full mode)
     tls internal
-
-    # Reverse proxy to vocai container
     reverse_proxy vocai:3010
-
-    # Logging
-    log {
-        output stdout
-        format console
-        level INFO
-    }
+    encode gzip
 }
-
-# Alternative: subdomain on w9.nu
-# vocai.w9.nu {
-#     tls internal
-#     reverse_proxy vocai:3010
-# }

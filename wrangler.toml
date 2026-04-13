@@ -1,5 +1,11 @@
-{
-  "name": "vocai",
-  "compatibility_date": "2026-04-13",
-  "pages_build_output_dir": "public"
-}
+name = "vocai"
+compatibility_date = "2026-04-13"
+
+[build]
+command = ""
+output_dir = "public"
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
