@@ -209,7 +209,7 @@ class AIGenerationManager {
         this._cards = [];
     }
 
-    async generateFlashcards(topic, count = 10, language = 'English', difficulty = 'intermediate') {
+    async generateFlashcards(topic, count = 10, language = 'English', difficulty = 'intermediate', model = 'minimax') {
         if (this.isGenerating) return;
 
         this.isGenerating = true;
@@ -221,10 +221,12 @@ class AIGenerationManager {
             formData.append('count', count);
             formData.append('language', language);
             formData.append('difficulty', difficulty);
+            formData.append('model', model);
 
             const response = await fetch('/flashcards/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                credentials: 'include',
                 body: formData.toString()
             });
 
@@ -379,8 +381,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const count = document.getElementById('count').value || 10;
             const language = document.getElementById('language').value || 'English';
             const difficulty = document.getElementById('difficulty').value || 'intermediate';
+            const model = document.getElementById('model').value || 'minimax';
 
-            await aiManager.generateFlashcards(topic, count, language, difficulty);
+            await aiManager.generateFlashcards(topic, count, language, difficulty, model);
         });
     }
 
