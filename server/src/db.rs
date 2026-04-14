@@ -49,6 +49,8 @@ pub async fn run_migrations(pool: &DbPool) -> Result<(), Box<dyn std::error::Err
             definition TEXT NOT NULL,
             example_sentence TEXT,
             image_url TEXT,
+            image_prompt TEXT,
+            image_model VARCHAR(100),
             tts_url TEXT,
             phonetic VARCHAR(100),
             part_of_speech VARCHAR(50),
@@ -100,6 +102,8 @@ pub async fn run_migrations(pool: &DbPool) -> Result<(), Box<dyn std::error::Err
         CREATE INDEX IF NOT EXISTS idx_vocabulary_islands_user_id ON vocabulary_islands(user_id);
         -- Add tts_url column if not exists (for existing deployments)
         ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS tts_url TEXT;
+        ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS image_prompt TEXT;
+        ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS image_model VARCHAR(100);
     ").await?;
 
     tracing::info!("✅ Database migrations completed");

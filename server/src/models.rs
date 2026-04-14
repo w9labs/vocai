@@ -14,6 +14,10 @@ impl AppState {
     pub async fn check_ai_rate_limit(&self, user_id: &str) -> bool {
         self.rate_limiter.is_allowed(&format!("ai:{}", user_id)).await
     }
+
+    pub async fn check_image_rate_limit(&self, user_id: &str) -> bool {
+        self.rate_limiter.is_allowed(&format!("image:{}", user_id)).await
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -33,6 +37,8 @@ pub struct Flashcard {
     pub definition: String,
     pub example_sentence: Option<String>,
     pub image_url: Option<String>,
+    pub image_prompt: Option<String>,
+    pub image_model: Option<String>,
     pub phonetic: Option<String>,
     pub part_of_speech: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -59,6 +65,7 @@ pub struct GeneratedFlashcard {
     pub example_sentence: String,
     pub phonetic: Option<String>,
     pub part_of_speech: String,
+    pub image_prompt: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

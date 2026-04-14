@@ -28,3 +28,4 @@ sha2 = "0.10"
 hex = "0.4"
 cookie = { version = "0.18", features = ["private"] }
 urlencoding = "2.1"
+thiserror = "1"

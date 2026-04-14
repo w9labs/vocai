@@ -34,7 +34,7 @@ pub async fn next_card(
     match state.db.get().await {
         Ok(client) => {
             let row = client.query_opt(
-                "SELECT f.id, f.word, f.definition, f.example_sentence, f.phonetic, f.part_of_speech, f.image_url,
+                "SELECT f.id, f.word, f.definition, f.example_sentence, f.phonetic, f.part_of_speech, f.image_url, f.image_prompt, f.image_model,
                         s.easiness_factor, s.interval_days, s.repetitions, s.leitner_box
                  FROM flashcards f
                  JOIN srs_reviews s ON s.flashcard_id = f.id
@@ -52,6 +52,8 @@ pub async fn next_card(
                     "phonetic": row.get::<_, Option<String>>("phonetic"),
                     "part_of_speech": row.get::<_, Option<String>>("part_of_speech"),
                     "image_url": row.get::<_, Option<String>>("image_url"),
+                    "image_prompt": row.get::<_, Option<String>>("image_prompt"),
+                    "image_model": row.get::<_, Option<String>>("image_model"),
                 }))),
                 Ok(None) => (StatusCode::OK, Json(json!({"done": true}))),
                 Err(e) => {
@@ -88,7 +90,7 @@ pub async fn answer(
                 &[&user_id, &flashcard_id],
             ).await;
 
-            let (ef, interval, reps, new_box, next_review) = match srs_row {
+            let (ef, interval, reps, new_box, _next_review) = match srs_row {
                 Ok(Some(row)) => {
                     let ef: f64 = row.get("easiness_factor");
                     let interval_days: i32 = row.get("interval_days");

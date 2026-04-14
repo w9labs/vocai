@@ -122,6 +122,7 @@ For each word, provide:
 3. Example sentence showing usage in context
 4. Phonetic pronunciation (if applicable)
 5. Part of speech (noun, verb, adjective, etc.)
+6. A short image_prompt for a mnemonic illustration. Make it vivid, concrete, and easy for Pollinations to render. No text, no labels, no captions.
 
 Return ONLY valid JSON array in this exact format:
 [
@@ -130,7 +131,8 @@ Return ONLY valid JSON array in this exact format:
     "definition": "a representative form or pattern",
     "example_sentence": "This sentence is an example of proper usage.",
     "phonetic": "/ɪɡˈzɑːmpəl/",
-    "part_of_speech": "noun"
+    "part_of_speech": "noun",
+    "image_prompt": "A clean illustration of..."
   }}
 ]
 

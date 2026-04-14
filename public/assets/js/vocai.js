@@ -3,6 +3,15 @@
  * Handles flashcard interactions, SRS review, and AI generation
  */
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // ============================================================
 // Flashcard Management
 // ============================================================
@@ -34,18 +43,31 @@ class FlashcardManager {
         const container = document.getElementById('flashcard-container');
         if (!container) return;
 
+        const word = escapeHtml(card.word);
+        const phonetic = card.phonetic ? escapeHtml(card.phonetic) : '';
+        const partOfSpeech = card.part_of_speech ? escapeHtml(card.part_of_speech) : '';
+        const definition = escapeHtml(card.definition);
+        const exampleSentence = card.example_sentence ? escapeHtml(card.example_sentence) : '';
+        const imageUrl = card.image_url ? escapeHtml(card.image_url) : '';
+        const imagePrompt = card.image_prompt ? escapeHtml(card.image_prompt) : '';
+
         container.innerHTML = `
             <div class="flashcard" id="flashcard" onclick="flashcardManager.flipCard()">
                 <div class="flashcard__front" id="card-front">
-                    <div class="flashcard__word">${card.word}</div>
-                    ${card.phonetic ? `<div class="flashcard__phonetic">${card.phonetic}</div>` : ''}
-                    ${card.part_of_speech ? `<span class="badge badge--info">${card.part_of_speech}</span>` : ''}
+                    <div class="flashcard__word">${word}</div>
+                    ${phonetic ? `<div class="flashcard__phonetic">${phonetic}</div>` : ''}
+                    ${partOfSpeech ? `<span class="badge badge--info">${partOfSpeech}</span>` : ''}
                     <p class="mt-md text-secondary">Click to reveal definition</p>
                 </div>
                 <div class="flashcard__back hidden" id="card-back">
-                    ${card.image_url ? `<img src="${card.image_url}" alt="${card.word}" class="flashcard__image" />` : ''}
-                    <div class="flashcard__definition">${card.definition}</div>
-                    ${card.example_sentence ? `<div class="flashcard__example">"${card.example_sentence}"</div>` : ''}
+                    ${imageUrl ? `<img src="${imageUrl}" alt="${word}" class="flashcard__image" />` : ''}
+                    <div class="flashcard__definition">${definition}</div>
+                    ${exampleSentence ? `<div class="flashcard__example">"${exampleSentence}"</div>` : ''}
+                    ${imagePrompt ? `<details class="mt-sm">
+                        <summary class="text-secondary" style="cursor:pointer">Visual mnemonic</summary>
+                        <p class="mt-sm" style="font-size:.9rem">${imagePrompt}</p>
+                        ${card.image_model ? `<p class="mt-sm text-secondary mono" style="font-size:.75rem">Model: ${escapeHtml(card.image_model)}</p>` : ''}
+                    </details>` : ''}
                 </div>
             </div>
         `;
@@ -154,7 +176,7 @@ class FlashcardManager {
             color = 'var(--error)';
         }
 
-        feedback.innerHTML = `<p style="color: ${color}; font-weight: 600;">${message}</p>`;
+        feedback.innerHTML = `<p style="color: ${color}; font-weight: 600;">${escapeHtml(message)}</p>`;
         
         const container = document.getElementById('flashcard-container');
         container.appendChild(feedback);
@@ -191,7 +213,7 @@ class FlashcardManager {
         if (container) {
             container.innerHTML = `
                 <div class="text-center">
-                    <p style="color: var(--error);">${message}</p>
+                    <p style="color: var(--error);">${escapeHtml(message)}</p>
                     <button class="btn btn--primary mt-md" onclick="location.reload()">Try Again</button>
                 </div>
             `;
@@ -275,13 +297,17 @@ class AIGenerationManager {
             <div class="grid grid--2col mt-md">
                 ${cards.map((card, i) => `
                     <div class="card fade-in">
-                        <h4 style="color: var(--primary-light);">${card.word}</h4>
-                        ${card.phonetic ? `<p class="mono" style="font-size:.85rem">${card.phonetic}</p>` : ''}
-                        ${card.part_of_speech ? `<span class="badge badge--info">${card.part_of_speech}</span>` : ''}
-                        <p class="mt-sm">${card.definition}</p>
-                        ${card.example_sentence ? `<p class="mt-sm" style="color: var(--secondary); font-style: italic; font-size:.9rem;">"${card.example_sentence}"</p>` : ''}
-                        <button class="btn btn--secondary btn--sm mt-md" onclick="aiManager.saveCard(aiManager._cards[${i}])">
-                            Save to Collection
+                        <h4 style="color: var(--primary-light);">${escapeHtml(card.word)}</h4>
+                        ${card.phonetic ? `<p class="mono" style="font-size:.85rem">${escapeHtml(card.phonetic)}</p>` : ''}
+                        ${card.part_of_speech ? `<span class="badge badge--info">${escapeHtml(card.part_of_speech)}</span>` : ''}
+                        <p class="mt-sm">${escapeHtml(card.definition)}</p>
+                        ${card.example_sentence ? `<p class="mt-sm" style="color: var(--secondary); font-style: italic; font-size:.9rem;">"${escapeHtml(card.example_sentence)}"</p>` : ''}
+                        ${card.image_prompt ? `<details class="mt-sm">
+                            <summary class="text-secondary" style="cursor:pointer">Visual mnemonic prompt</summary>
+                            <p class="mt-sm" style="font-size:.9rem">${escapeHtml(card.image_prompt)}</p>
+                        </details>` : ''}
+                        <button class="btn btn--secondary btn--sm mt-md" onclick='aiManager.saveCard(aiManager._cards[${i}])'>
+                            Save + Generate Image
                         </button>
                     </div>
                 `).join('')}
@@ -299,7 +325,7 @@ class AIGenerationManager {
             });
             const result = await response.json();
             if (result.success) {
-                alert(`✅ "${card.word}" saved to your collection!`);
+                alert(`✅ "${card.word}" saved to your collection!${result.image_generated ? '' : ' Image was not generated yet.'}`);
             } else {
                 if (result.error === 'Not authenticated') {
                     alert('Please login first to save cards.\n\nRedirecting to login...');
@@ -317,7 +343,7 @@ class AIGenerationManager {
     showError(message) {
         const container = document.getElementById('generated-cards-container');
         if (container) {
-            container.innerHTML = `<p style="color: var(--error);">${message}</p>`;
+            container.innerHTML = `<p style="color: var(--error);">${escapeHtml(message)}</p>`;
         }
     }
 }

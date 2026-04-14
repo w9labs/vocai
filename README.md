@@ -20,7 +20,7 @@
 
 ## 🎯 Features
 
-- **🤖 AI Flashcard Generation** — Powered by NVIDIA AI, generate vocabulary flashcards by topic
+- **🤖 AI Flashcard Generation** — Powered by NVIDIA AI for text + Pollinations for save-time mnemonic images
 - **🧠 Spaced Repetition System (SRS)** — Hybrid SM-2 + Leitner algorithm for optimal memory retention
 - **🏝️ Vocabulary Islands** — Learn words in contextual topics (cooking, politics, tech, etc.)
 - **📊 Smart Analytics** — Track your learning progress, streaks, and mastered words
@@ -31,7 +31,7 @@
 
 - **Backend:** Rust 1.94 + Axum 0.7 + tokio
 - **Database:** PostgreSQL 16 (shared with W9 Labs ecosystem)
-- **AI:** NVIDIA API (free tier, extensible to other providers)
+- **AI:** NVIDIA API for text generation + Pollinations for image generation
 - **Authentication:** OAuth 2.0 via w9-db
 - **Deployment:** Docker + Docker Compose + Caddy reverse proxy
 - **Frontend:** Server-rendered HTML + vanilla JavaScript
@@ -160,7 +160,7 @@ wrangler pages deploy public --project-name=vocai
 
 - `users` — User accounts (synced with w9-db OAuth)
 - `vocabulary_islands` — Topic-based word collections
-- `flashcards` — Individual vocabulary cards
+- `flashcards` — Individual vocabulary cards, image prompts, and Pollinations image URLs
 - `srs_reviews` — Spaced repetition progress
 - `study_sessions` — Review history
 - `user_stats` — Aggregated learning statistics
@@ -175,6 +175,13 @@ Vocai uses the W9 Labs unified OAuth 2.0 system:
 4. Callback to `vocai.top/auth/callback` with auth code
 5. Exchange code for token via `/oauth/token`
 6. Session created, user redirected to dashboard
+
+### Image Generation Flow
+
+1. The text model generates flashcards and an `image_prompt` for each card.
+2. Pollinations renders the image only when the user saves a card.
+3. Vocai stores the returned image URL plus prompt/model metadata in PostgreSQL.
+4. If image generation fails, the flashcard still saves so study flow is never blocked.
 
 ## 🎨 Design System
 

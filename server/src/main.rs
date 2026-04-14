@@ -4,7 +4,7 @@ use axum::{
     http::{header, HeaderValue, Response, StatusCode},
     response::IntoResponse,
     routing::{get, post},
-    Json, Router,
+    Router,
 };
 use serde::Deserialize;
 use tower_http::services::{ServeDir, ServeFile};
@@ -34,11 +34,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     db::run_migrations(&db_pool).await.expect("Failed to run migrations");
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").expect("NVIDIA_API_KEY must be set");
-    let pollinations_api_key = std::env::var("POLLINATIONS_API_KEY")
-        .unwrap_or_else(|_| String::new());
-
     let nvidia_client = nvidia::NvidiaClient::new(&nvidia_api_key);
-    let pollinations_client = pollinations::PollinationsClient::new(&pollinations_api_key);
+    let pollinations_client = pollinations::PollinationsClient::new()?;
+    if !pollinations_client.has_key() {
+        tracing::warn!("POLLINATIONS_API_KEY is not set; flashcards will save without generated images");
+    }
     let http_client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .build()
