@@ -292,17 +292,23 @@ class AIGenerationManager {
             const response = await fetch('/api/flashcards/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(card)
             });
             const result = await response.json();
             if (result.success) {
-                alert(`"${card.word}" saved to your collection!`);
+                alert(`✅ "${card.word}" saved to your collection!`);
             } else {
-                alert('Failed to save: ' + (result.error || 'Unknown error'));
+                if (result.error === 'Not authenticated') {
+                    alert('Please login first to save cards.\n\nRedirecting to login...');
+                    window.location.href = '/login';
+                } else {
+                    alert('Failed to save: ' + (result.error || 'Unknown error'));
+                }
             }
         } catch (error) {
             console.error('Error saving card:', error);
-            alert('Failed to save card');
+            alert('Failed to save card: ' + error.message);
         }
     }
 
