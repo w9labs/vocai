@@ -6,6 +6,7 @@ pub struct AppState {
     pub db: crate::db::DbPool,
     pub nvidia: crate::nvidia::NvidiaClient,
     pub pollinations: crate::pollinations::PollinationsClient,
+    pub http_client: reqwest::Client,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

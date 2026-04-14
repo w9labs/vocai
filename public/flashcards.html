@@ -45,20 +45,17 @@
         </footer>
     </div>
     <script>
-        // Browser built-in TTS — free, no API key, no CORS issues
-        function speakText(word, sentence) {
-            if (!window.speechSynthesis) { alert('TTS not supported'); return; }
-            window.speechSynthesis.cancel();
-            const text = sentence || word;
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.rate = 0.85;
-            utter.pitch = 1;
-            window.speechSynthesis.speak(utter);
+        // Google Translate TTS via backend proxy (no CORS issues)
+        function speakText(text) {
+            if (!text) return;
+            const audio = new Audio('/api/tts?text=' + encodeURIComponent(text));
+            audio.play().catch(e => console.warn('TTS playback error:', e));
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const res = await fetch('/api/flashcards', { credentials: 'include' });
+                if (!res.ok) throw new Error('Failed to load flashcards');
                 const data = await res.json();
                 const grid = document.getElementById('flashcards-grid');
 
@@ -75,7 +72,7 @@
                         <div style="padding:var(--space-md)">
                             <div class="flex justify-between items-center">
                                 <h3 style="color:var(--primary-light); margin:0">${c.word}</h3>
-                                <button class="btn btn--secondary btn--sm" onclick="speakText('${c.word}', '${c.example_sentence ? c.example_sentence.replace(/'/g, "\\'") : c.word}')" title="Listen">🔊</button>
+                                <button class="btn btn--secondary btn--sm" onclick="speakText('${(c.example_sentence || c.word).replace(/'/g, "\\'")}')" title="Listen">🔊</button>
                             </div>
                             ${c.phonetic ? `<p class="mono" style="font-size:.85rem; color:var(--text-muted)">${c.phonetic}</p>` : ''}
                             ${c.part_of_speech ? `<span class="badge badge--info">${c.part_of_speech}</span>` : ''}

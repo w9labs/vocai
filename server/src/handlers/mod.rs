@@ -46,6 +46,10 @@ pub async fn islands_page(State(_state): State<AppState>) -> axum::response::Res
     serve_html("islands").await
 }
 
+pub async fn islands_new_page(State(_state): State<AppState>) -> axum::response::Response {
+    serve_html("islands-new").await
+}
+
 pub async fn review_page(State(_state): State<AppState>) -> axum::response::Response {
     serve_html("review").await
 }
