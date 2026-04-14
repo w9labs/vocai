@@ -223,16 +223,22 @@ pub async fn view(
 
 pub async fn migrate(
     State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
 ) -> impl IntoResponse {
+    let (user_id, _token) = match crate::handlers::auth::get_session(&headers) {
+        Some(s) => s,
+        None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Not authenticated"}))),
+    };
+
     let client = match state.db.get().await {
         Ok(c) => c,
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
     };
 
-    // Find all cards missing image_url or tts_url
+    // Only migrate cards belonging to THIS user
     let rows = match client.query(
-        "SELECT id, word, definition, example_sentence, part_of_speech, image_url, tts_url FROM flashcards WHERE image_url IS NULL OR tts_url IS NULL",
-        &[],
+        "SELECT id, word, definition, example_sentence, part_of_speech, image_url, tts_url FROM flashcards WHERE user_id = $1 AND (image_url IS NULL OR tts_url IS NULL)",
+        &[&user_id],
     ).await {
         Ok(r) => r,
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
@@ -250,31 +256,29 @@ pub async fn migrate(
         let existing_image: Option<String> = row.get("image_url");
         let existing_tts: Option<String> = row.get("tts_url");
 
-        // Generate image URL if missing
         if existing_image.is_none() {
             let pos_str = pos.as_deref().unwrap_or("word");
             let prompt = format!("educational illustration for the word '{}', {} context, clean simple modern style", word, pos_str);
             let image_url = state.pollinations.generate_image_url(&prompt);
             let _ = client.execute(
-                "UPDATE flashcards SET image_url = $1, updated_at = NOW() WHERE id = $2",
-                &[&image_url, &id],
+                "UPDATE flashcards SET image_url = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3",
+                &[&image_url, &id, &user_id],
             ).await;
             updated_images += 1;
         }
 
-        // Generate TTS URL if missing
         if existing_tts.is_none() {
             let tts_text = example.as_deref().unwrap_or_else(|| &word);
             let tts_url = crate::pollinations::TTSClient::generate_audio_url(tts_text, "en");
             let _ = client.execute(
-                "UPDATE flashcards SET tts_url = $1, updated_at = NOW() WHERE id = $2",
-                &[&tts_url, &id],
+                "UPDATE flashcards SET tts_url = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3",
+                &[&tts_url, &id, &user_id],
             ).await;
             updated_tts += 1;
         }
     }
 
-    tracing::info!("Migration complete: {} cards processed, {} images added, {} TTS added", total, updated_images, updated_tts);
+    tracing::info!("Migration for user {}: {} cards, {} images, {} TTS", user_id, total, updated_images, updated_tts);
     (StatusCode::OK, Json(json!({
         "success": true,
         "total_cards": total,
