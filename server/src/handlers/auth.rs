@@ -149,17 +149,26 @@ pub async fn logout() -> impl IntoResponse {
 pub fn get_session(headers: &axum::http::HeaderMap) -> Option<(Uuid, String)> {
     let cookie_header = headers.get(header::COOKIE)?;
     let cookie_str = cookie_header.to_str().ok()?;
+    tracing::debug!("Cookie header: {}", cookie_str);
     for c in cookie_str.split(';') {
         let c = c.trim();
         if c.starts_with("vocai_session=") {
             let val = c.trim_start_matches("vocai_session=");
+            tracing::debug!("Session cookie value: {}", val);
             if let Some((uid_str, token)) = val.split_once(':') {
+                tracing::debug!("Parsed uid: {}, token len: {}", uid_str, token.len());
                 if let Ok(uid) = Uuid::parse_str(uid_str) {
+                    tracing::info!("Session valid for user: {}", uid);
                     return Some((uid, token.to_string()));
+                } else {
+                    tracing::warn!("Invalid UUID in session cookie: {}", uid_str);
                 }
+            } else {
+                tracing::warn!("No colon found in session cookie value");
             }
             return None;
         }
     }
+    tracing::debug!("No vocai_session cookie found");
     None
 }
