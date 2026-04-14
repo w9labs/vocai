@@ -64,7 +64,7 @@
                         ${c.part_of_speech ? `<span class="badge badge--info">${c.part_of_speech}</span>` : ''}
                         <p class="mt-sm">${c.definition}</p>
                         ${c.example_sentence ? `<p class="mt-sm" style="color:var(--secondary); font-style:italic; font-size:.9rem">"${c.example_sentence}"</p>` : ''}
-                        ${c.tts_url ? `<button class="btn btn--secondary btn--sm mt-sm" onclick="new Audio('${c.tts_url}').play()">🔊 Listen</button>` : ''}
+                        ${c.tts_url ? `<button class="btn btn--secondary btn--sm mt-sm" onclick="this.disabled=true; new Audio('${c.tts_url}').play(); setTimeout(()=>this.disabled=false, 3000)">🔊 Listen</button>` : ''}
                     </div>
                 `).join('');
             } catch(e) {

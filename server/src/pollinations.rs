@@ -45,15 +45,16 @@ impl PollinationsClient {
 }
 
 /// Pollinations text-to-speech — free, no API key needed
+/// GET https://text.pollinations.ai/<text> returns the spoken audio
 pub struct TTSClient;
 
 impl TTSClient {
     /// Generate TTS audio URL for a word/phrase.
-    /// Returns a direct URL to the generated audio (Pollinations serves it directly).
-    /// The URL returns audio/mp3 when accessed.
+    /// Returns a direct URL — when accessed, Pollinations returns audio.
     pub fn generate_audio_url(text: &str) -> String {
+        // Simple free TTS — no model param needed, works out of the box
         format!(
-            "https://text.pollinations.ai/{}?model=openai-audio&voice=alloy",
+            "https://text.pollinations.ai/{}",
             urlencoding::encode(text)
         )
     }
