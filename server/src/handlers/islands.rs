@@ -9,12 +9,12 @@ use serde_json::json;
 use tracing;
 use crate::models::AppState;
 
-pub async fn list(State(state): State<AppState>) -> impl IntoResponse {
-    (StatusCode::OK, "Your Vocabulary Islands")
+pub async fn list(State(_state): State<AppState>) -> impl IntoResponse {
+    super::serve_html("islands").await
 }
 
-pub async fn new_form() -> impl IntoResponse {
-    (StatusCode::OK, "Create New Vocabulary Island")
+pub async fn new_form(State(_state): State<AppState>) -> impl IntoResponse {
+    super::serve_html("islands-new").await
 }
 
 pub async fn create(

@@ -8,15 +8,14 @@ use axum::{
 use serde_json::json;
 use tracing;
 use crate::models::{AppState, GeneratedFlashcard};
+use crate::nvidia::Model;
 
-pub async fn list(State(state): State<AppState>) -> impl IntoResponse {
-    // List user's flashcards
-    (StatusCode::OK, "Your Flashcards")
+pub async fn list(State(_state): State<AppState>) -> impl IntoResponse {
+    super::serve_html("flashcards").await
 }
 
-pub async fn new_form() -> impl IntoResponse {
-    // Show form to create new flashcard or generate with AI
-    (StatusCode::OK, "Create New Flashcard")
+pub async fn new_form(State(_state): State<AppState>) -> impl IntoResponse {
+    super::serve_html("flashcards-new").await
 }
 
 pub async fn generate(
@@ -27,29 +26,35 @@ pub async fn generate(
         .and_then(|v| v.as_str())
         .unwrap_or("general")
         .to_string();
-    
+
     let count = params.get("count")
         .and_then(|v| v.as_u64())
         .unwrap_or(10) as usize;
-    
+
     let language = params.get("language")
         .and_then(|v| v.as_str())
         .unwrap_or("English")
         .to_string();
-    
+
     let difficulty = params.get("difficulty")
         .and_then(|v| v.as_str())
         .unwrap_or("intermediate")
         .to_string();
 
-    tracing::info!("Generating {} flashcards for topic: {}", count, topic);
+    let model_str = params.get("model")
+        .and_then(|v| v.as_str())
+        .unwrap_or("minimax");
+    let model = Model::from_str(model_str);
 
-    match state.nvidia.generate_flashcards(&topic, count, &language, &difficulty).await {
+    tracing::info!("Generating {} flashcards for topic: {} using model: {}", count, topic, model.id());
+
+    // Create a client with the selected model
+    let api_key = std::env::var("NVIDIA_API_KEY").expect("NVIDIA_API_KEY must be set");
+    let client = crate::nvidia::NvidiaClient::new(&api_key).with_model(model);
+
+    match client.generate_flashcards(&topic, count, &language, &difficulty).await {
         Ok(flashcards) => {
             tracing::info!("Successfully generated {} flashcards", flashcards.len());
-            
-            // In production, save to database here
-            // For now, return as JSON
             (StatusCode::OK, Json(json!({
                 "success": true,
                 "count": flashcards.len(),

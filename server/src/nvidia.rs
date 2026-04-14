@@ -2,26 +2,36 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tracing;
 
+/// Available NVIDIA NIM models
+#[derive(Debug, Clone, Copy, Default)]
+pub enum Model {
+    #[default]
+    MiniMaxM27,
+    GLM4_7,
+}
+
+impl Model {
+    pub fn id(&self) -> &'static str {
+        match self {
+            Model::MiniMaxM27 => "minimaxai/minimax-m2.7",
+            Model::GLM4_7 => "z-ai/glm4.7",
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "glm4.7" | "z-ai/glm4.7" => Model::GLM4_7,
+            _ => Model::MiniMaxM27,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct NvidiaClient {
     client: Client,
     api_key: String,
     base_url: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct NvidiaRequest {
-    messages: Vec<NvidiaMessage>,
-    temperature: f32,
-    top_p: f32,
-    max_tokens: usize,
-    stream: bool,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct NvidiaMessage {
-    role: String,
-    content: String,
+    model: Model,
 }
 
 #[derive(Debug, Deserialize)]
@@ -34,13 +44,60 @@ struct NvidiaChoice {
     message: NvidiaMessage,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct NvidiaMessage {
+    content: String,
+}
+
 impl NvidiaClient {
     pub fn new(api_key: &str) -> Self {
         Self {
             client: Client::new(),
             api_key: api_key.to_string(),
             base_url: "https://integrate.api.nvidia.com/v1".to_string(),
+            model: Model::MiniMaxM27,
         }
+    }
+
+    pub fn with_model(mut self, model: Model) -> Self {
+        self.model = model;
+        self
+    }
+
+    async fn chat(
+        &self,
+        prompt: &str,
+        temperature: f32,
+        max_tokens: usize,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        let url = format!("{}/chat/completions", self.base_url);
+        tracing::info!("NVIDIA API: {} model={}", url, self.model.id());
+
+        let response = self
+            .client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("Content-Type", "application/json")
+            .json(&serde_json::json!({
+                "model": self.model.id(),
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": temperature,
+                "top_p": 0.95,
+                "max_tokens": max_tokens,
+                "stream": false,
+            }))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            tracing::error!("NVIDIA API error: {} - {}", status, body);
+            return Err(format!("NVIDIA API error: {} - {}", status, body).into());
+        }
+
+        let data: NvidiaResponse = response.json().await?;
+        Ok(data.choices[0].message.content.clone())
     }
 
     pub async fn generate_flashcards(
@@ -60,7 +117,6 @@ For each word, provide:
 3. Example sentence showing usage in context
 4. Phonetic pronunciation (if applicable)
 5. Part of speech (noun, verb, adjective, etc.)
-6. A short image prompt describing a visual representation
 
 Return ONLY valid JSON array in this exact format:
 [
@@ -69,109 +125,24 @@ Return ONLY valid JSON array in this exact format:
     "definition": "a representative form or pattern",
     "example_sentence": "This sentence is an example of proper usage.",
     "phonetic": "/ɪɡˈzɑːmpəl/",
-    "part_of_speech": "noun",
-    "image_prompt": "A textbook showing sample problems"
+    "part_of_speech": "noun"
   }}
 ]
 
-Ensure words are practical and related to the topic. Focus on contextual learning."#,
+Ensure words are practical and related to the topic."#,
             count, language, difficulty, topic
         );
 
-        let request_body = NvidiaRequest {
-            messages: vec![NvidiaMessage {
-                role: "user".to_string(),
-                content: prompt,
-            }],
-            temperature: 0.7,
-            top_p: 0.9,
-            max_tokens: 4000,
-            stream: false,
-        };
+        let content = self.chat(&prompt, 0.7, 4000).await?;
 
-        let response = self
-            .client
-            .post(format!("{}/chat/completions", self.base_url))
-            .header("Authorization", format!("Bearer {}", self.api_key))
-            .header("Content-Type", "application/json")
-            .json(&serde_json::json!({
-                "model": "minimax/minimax-m2.7",
-                "messages": request_body.messages,
-                "temperature": request_body.temperature,
-                "top_p": request_body.top_p,
-                "max_tokens": request_body.max_tokens,
-                "stream": request_body.stream,
-            }))
-            .send()
-            .await?;
-
-        if !response.status().is_success() {
-            let status = response.status();
-            let error_text = response.text().await?;
-            tracing::error!("NVIDIA API error: {} - {}", status, error_text);
-            return Err(format!("NVIDIA API error: {} - {}", status, error_text).into());
-        }
-
-        let nvidia_response: NvidiaResponse = response.json().await?;
-        let content = &nvidia_response.choices[0].message.content;
-
-        // Parse the JSON from the response
+        // Extract JSON array from response
         let json_start = content.find('[').ok_or("No JSON array found in response")?;
         let json_end = content.rfind(']').ok_or("No JSON array end found in response")?;
         let json_str = &content[json_start..=json_end];
 
         let flashcards: Vec<crate::models::GeneratedFlashcard> = serde_json::from_str(json_str)?;
-        
-        tracing::info!("Generated {} flashcards from NVIDIA AI", flashcards.len());
+        tracing::info!("Generated {} flashcards via {}", flashcards.len(), self.model.id());
         Ok(flashcards)
-    }
-
-    pub async fn generate_image_prompt(
-        &self,
-        word: &str,
-        context: &str,
-    ) -> Result<String, Box<dyn std::error::Error>> {
-        let prompt = format!(
-            r#"Create a vivid, memorable visual description that would help someone remember the word "{}" in this context: {}
-
-Provide a concise image prompt (max 50 words) that captures the essence of the word and makes it memorable through visual association.
-Focus on concrete, visual elements that can be easily illustrated."#,
-            word, context
-        );
-
-        let request_body = NvidiaRequest {
-            messages: vec![NvidiaMessage {
-                role: "user".to_string(),
-                content: prompt,
-            }],
-            temperature: 0.8,
-            top_p: 0.9,
-            max_tokens: 200,
-            stream: false,
-        };
-
-        let response = self
-            .client
-            .post(format!("{}/chat/completions", self.base_url))
-            .header("Authorization", format!("Bearer {}", self.api_key))
-            .header("Content-Type", "application/json")
-            .json(&serde_json::json!({
-                "model": "minimax/minimax-m2.7",
-                "messages": request_body.messages,
-                "temperature": request_body.temperature,
-                "top_p": request_body.top_p,
-                "max_tokens": request_body.max_tokens,
-                "stream": request_body.stream,
-            }))
-            .send()
-            .await?;
-
-        if !response.status().is_success() {
-            return Err(format!("NVIDIA API error: {}", response.status()).into());
-        }
-
-        let nvidia_response: NvidiaResponse = response.json().await?;
-        Ok(nvidia_response.choices[0].message.content.clone())
     }
 
     pub async fn explain_word(
@@ -180,50 +151,21 @@ Focus on concrete, visual elements that can be easily illustrated."#,
         language: &str,
     ) -> Result<String, Box<dyn std::error::Error>> {
         let prompt = format!(
-            r#"Explain the word "{}" in {} for a language learner.
-Include:
-- Etymology/origin if helpful
-- Common collocations and phrases
-- Memory tricks or mnemonics
-- Cultural context if relevant
-- Similar words or common confusions
-
-Keep it concise but comprehensive."#,
+            r#"Explain the word "{}" in {} for a language learner. Include etymology, common collocations, memory tricks, and cultural context."#,
             word, language
         );
+        self.chat(&prompt, 0.7, 500).await
+    }
 
-        let request_body = NvidiaRequest {
-            messages: vec![NvidiaMessage {
-                role: "user".to_string(),
-                content: prompt,
-            }],
-            temperature: 0.7,
-            top_p: 0.9,
-            max_tokens: 500,
-            stream: false,
-        };
-
-        let response = self
-            .client
-            .post(format!("{}/chat/completions", self.base_url))
-            .header("Authorization", format!("Bearer {}", self.api_key))
-            .header("Content-Type", "application/json")
-            .json(&serde_json::json!({
-                "model": "minimax/minimax-m2.7",
-                "messages": request_body.messages,
-                "temperature": request_body.temperature,
-                "top_p": request_body.top_p,
-                "max_tokens": request_body.max_tokens,
-                "stream": request_body.stream,
-            }))
-            .send()
-            .await?;
-
-        if !response.status().is_success() {
-            return Err(format!("NVIDIA API error: {}", response.status()).into());
-        }
-
-        let nvidia_response: NvidiaResponse = response.json().await?;
-        Ok(nvidia_response.choices[0].message.content.clone())
+    pub async fn generate_image_prompt(
+        &self,
+        word: &str,
+        context: &str,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        let prompt = format!(
+            r#"Create a vivid visual description to help remember the word "{}" in this context: {}"#,
+            word, context
+        );
+        self.chat(&prompt, 0.8, 200).await
     }
 }

@@ -19,7 +19,7 @@ pub async fn index() -> impl IntoResponse {
     }
 }
 
-async fn serve_html(page: &str) -> axum::response::Response {
+pub async fn serve_html(page: &str) -> axum::response::Response {
     let path = format!("public/{}.html", page);
     match fs::read_to_string(&path).await {
         Ok(c) => Html(c).into_response(),

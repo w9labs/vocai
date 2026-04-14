@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Vocabulary Island — Vocai</title>
+    <link rel="icon" type="image/svg+xml" href="/w9-logo/logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/vocai.css">
+</head>
+<body>
+    <div class="page-wrapper">
+        <nav class="nav">
+            <div class="container nav__inner">
+                <a href="/" class="nav__logo"><img src="/w9-logo/workmark-transparent.svg" alt="Vocai" /><span>Vocai</span></a>
+                <ul class="nav__links">
+                    <li><a href="/dashboard" class="nav__link">Dashboard</a></li>
+                    <li><a href="/flashcards" class="nav__link">Flashcards</a></li>
+                    <li><a href="/islands" class="nav__link" style="color:var(--secondary)">Islands</a></li>
+                    <li><a href="/review" class="nav__link">Review</a></li>
+                    <li><a href="/logout" class="btn btn--secondary btn--sm">Logout</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <main>
+            <div class="container">
+                <h1>🏝️ Create Vocabulary Island</h1>
+                <p class="mb-lg text-secondary">Choose a topic to learn vocabulary in context</p>
+
+                <div class="card" style="max-width:600px">
+                    <form id="create-island-form">
+                        <div class="form-group">
+                            <label class="form-label" for="island-name">Island Name *</label>
+                            <input type="text" id="island-name" name="name" class="form-input" placeholder="e.g., Italian Cooking, Startup Business" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="island-topic">Topic *</label>
+                            <input type="text" id="island-topic" name="topic" class="form-input" placeholder="e.g., cooking, business, health, travel" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="island-description">Description</label>
+                            <textarea id="island-description" name="description" class="form-textarea" placeholder="What vocabulary do you want to learn on this island?"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn--primary btn--lg">🏝️ Create Island</button>
+                    </form>
+                </div>
+
+                <div class="card mt-xl">
+                    <h2>💡 Popular Island Topics</h2>
+                    <div class="grid grid--3col mt-md">
+                        <div class="text-center"><div style="font-size:2rem">🍳</div><h4 class="mt-sm">Cooking</h4></div>
+                        <div class="text-center"><div style="font-size:2rem">💼</div><h4 class="mt-sm">Business</h4></div>
+                        <div class="text-center"><div style="font-size:2rem">🏥</div><h4 class="mt-sm">Health</h4></div>
+                        <div class="text-center"><div style="font-size:2rem">✈️</div><h4 class="mt-sm">Travel</h4></div>
+                        <div class="text-center"><div style="font-size:2rem">🎓</div><h4 class="mt-sm">Education</h4></div>
+                        <div class="text-center"><div style="font-size:2rem">💻</div><h4 class="mt-sm">Technology</h4></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container footer__inner">
+                <div class="footer__logo"><img src="/w9-logo/workmark-transparent.svg" alt="W9 Labs" /><span>Built with 💜 by W9 Labs</span></div>
+            </div>
+        </footer>
+    </div>
+    <script>
+        document.getElementById('create-island-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('island-name').value;
+            const topic = document.getElementById('island-topic').value;
+            const desc = document.getElementById('island-description').value;
+            try {
+                const fd = new URLSearchParams(); fd.append('name', name); fd.append('topic', topic); if(desc) fd.append('description', desc);
+                const res = await fetch('/islands', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: fd });
+                if (res.ok) { window.location.href = '/islands'; }
+            } catch(err) { alert('Failed to create island'); }
+        });
+    </script>
+</body>
+</html>

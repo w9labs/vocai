@@ -8,15 +8,8 @@ use serde_json::json;
 use tracing;
 use crate::models::AppState;
 
-pub async fn session(State(state): State<AppState>) -> impl IntoResponse {
-    // Start a review session showing due cards
-    tracing::info!("Starting review session");
-
-    // In production, query cards due for review
-    Json(json!({
-        "due_count": 0,
-        "message": "No cards due for review!"
-    }))
+pub async fn session(State(_state): State<AppState>) -> impl IntoResponse {
+    super::serve_html("review").await
 }
 
 pub async fn next_card(State(state): State<AppState>) -> impl IntoResponse {
