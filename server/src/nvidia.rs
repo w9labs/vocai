@@ -51,8 +51,9 @@ struct NvidiaMessage {
 
 impl NvidiaClient {
     pub fn new(api_key: &str) -> Self {
+        // No client-level timeout — the handler-level timeout controls this
         let client = Client::builder()
-            .timeout(std::time::Duration::from_secs(90))
+            .timeout(std::time::Duration::from_secs(300))
             .build()
             .expect("Failed to create HTTP client");
         Self {

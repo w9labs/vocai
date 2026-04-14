@@ -138,7 +138,7 @@ pub async fn generate(
     let client = crate::nvidia::NvidiaClient::new(&api_key).with_model(model);
 
     match tokio::time::timeout(
-        std::time::Duration::from_secs(120),
+        std::time::Duration::from_secs(180),
         client.generate_flashcards(&topic, count, &language, &difficulty),
     ).await {
         Ok(Ok(flashcards)) => {
@@ -157,10 +157,10 @@ pub async fn generate(
             })))
         }
         Err(_) => {
-            tracing::error!("Flashcard generation timed out after 120s");
+            tracing::error!("Flashcard generation timed out after 180s");
             (StatusCode::GATEWAY_TIMEOUT, Json(json!({
                 "success": false,
-                "error": "AI generation timed out. Please try again with fewer words or a simpler topic."
+                "error": "AI generation timed out (3min). Try fewer words or a simpler topic."
             })))
         }
     }
