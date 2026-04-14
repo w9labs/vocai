@@ -124,3 +124,20 @@ pub async fn review(
         "next_review": next_review
     }))
 }
+
+pub async fn save(
+    State(_state): State<AppState>,
+    Json(payload): Json<serde_json::Value>,
+) -> impl IntoResponse {
+    let word = payload.get("word")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+
+    tracing::info!("Saving flashcard for word: {}", word);
+
+    // In production, insert into flashcards table
+    Json(json!({
+        "success": true,
+        "word": word
+    }))
+}

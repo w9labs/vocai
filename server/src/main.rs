@@ -53,6 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/flashcards/:id", get(handlers::flashcards::view))
         .route("/flashcards/:id/study", get(handlers::flashcards::study))
         .route("/flashcards/:id/review", post(handlers::flashcards::review))
+        .route("/flashcards/save", post(handlers::flashcards::save))
         .route("/islands", get(handlers::islands_page))
         .route("/islands/new", get(handlers::islands::new_form))
         .route("/islands", post(handlers::islands::create))
