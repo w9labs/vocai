@@ -363,10 +363,11 @@ const aiManager = new AIGenerationManager();
 const islandManager = new IslandManager();
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Auto-load first flashcard if on study page
-    if (window.location.pathname.includes('/flashcards/')) {
-        const cardId = window.location.pathname.split('/').pop();
-        if (cardId && cardId !== 'flashcards') {
+    // Auto-load flashcard if on a specific card study page (not /flashcards/new)
+    const path = window.location.pathname;
+    if (path.match(/^\/flashcards\/[0-9a-f-]{36}(\/study)?$/)) {
+        const cardId = path.split('/')[2];
+        if (cardId) {
             flashcardManager.loadFlashcard(cardId);
         }
     }

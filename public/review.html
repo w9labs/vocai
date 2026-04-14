@@ -8,7 +8,7 @@
     <title>Review — Vocai</title>
     <link rel="icon" type="image/svg+xml" href="/w9-logo/logo.svg">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/vocai.css">
+    <link rel="stylesheet" href="/assets/css/vocai.css?v=2">
 </head>
 <body>
     <div class="page-wrapper">
@@ -103,7 +103,7 @@
             </div>
         </footer>
     </div>
-    <script src="/assets/js/vocai.js"></script>
+    <script src="/assets/js/vocai.js?v=3"></script>
     <script>
         let S={c:0,w:0,t:0};
         function upd(){
@@ -111,7 +111,32 @@
             document.getElementById('stat-wrong').textContent=S.w;
             document.getElementById('stat-acc').textContent=S.t?Math.round(S.c/S.t*100)+'%':'0%';
             document.getElementById('done').textContent=S.t;
-            document.getElementById('cards-left').textContent=0;
+        }
+
+        // Load review session
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const stats = await (await fetch('/stats')).json();
+                document.getElementById('total').textContent = stats.due_count || 0;
+                document.getElementById('cards-left').textContent = stats.due_count || 0;
+                const container = document.getElementById('flashcard-container');
+
+                if (!stats.due_count || stats.due_count === 0) {
+                    container.innerHTML = '<div class="card text-center" style="padding:var(--space-2xl)"><h2>🎉 No cards due for review!</h2><p class="mt-md text-secondary">Generate new flashcards or come back later.</p><a href="/flashcards/new" class="btn btn--primary mt-md">✨ Generate Flashcards</a></div>';
+                    return;
+                }
+
+                // Load first review card
+                loadNextReviewCard();
+            } catch(e) {
+                console.error('Failed to load review session:', e);
+            }
+        });
+
+        async function loadNextReviewCard() {
+            // For now, show a placeholder - full review flow requires SRS implementation
+            const container = document.getElementById('flashcard-container');
+            container.innerHTML = '<div class="card text-center" style="padding:var(--space-2xl)"><h2>📝 Review Session</h2><p class="mt-md text-secondary">Review flow is being built. Check back soon!</p></div>';
         }
     </script>
 </body>

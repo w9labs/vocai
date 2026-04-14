@@ -170,8 +170,33 @@ pub async fn view(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    // View single flashcard
-    (StatusCode::OK, format!("Flashcard: {}", id))
+    let card_id = match Uuid::parse_str(&id) {
+        Ok(u) => u,
+        Err(_) => return (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid card ID"}))).into_response(),
+    };
+
+    match state.db.get().await {
+        Ok(client) => {
+            let row = client.query_opt(
+                "SELECT id, word, definition, example_sentence, phonetic, part_of_speech FROM flashcards WHERE id = $1",
+                &[&card_id],
+            ).await;
+
+            match row {
+                Ok(Some(row)) => (StatusCode::OK, Json(json!({
+                    "id": row.get::<_, Uuid>("id").to_string(),
+                    "word": row.get::<_, String>("word"),
+                    "definition": row.get::<_, String>("definition"),
+                    "example_sentence": row.get::<_, Option<String>>("example_sentence"),
+                    "phonetic": row.get::<_, Option<String>>("phonetic"),
+                    "part_of_speech": row.get::<_, Option<String>>("part_of_speech"),
+                }))).into_response(),
+                Ok(None) => (StatusCode::NOT_FOUND, Json(json!({"error": "Flashcard not found"}))).into_response(),
+                Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
+            }
+        }
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))).into_response(),
+    }
 }
 
 pub async fn study(
