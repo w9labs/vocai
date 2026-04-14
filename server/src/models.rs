@@ -5,6 +5,7 @@ use uuid::Uuid;
 pub struct AppState {
     pub db: crate::db::DbPool,
     pub nvidia: crate::nvidia::NvidiaClient,
+    pub pollinations: crate::pollinations::PollinationsClient,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

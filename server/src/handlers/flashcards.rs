@@ -34,6 +34,17 @@ pub async fn save(
     let phonetic = payload.get("phonetic").and_then(|v| v.as_str()).map(|s| s.to_string());
     let pos = payload.get("part_of_speech").and_then(|v| v.as_str()).map(|s| s.to_string());
 
+    // Generate image URL via Pollinations (flux-schnell, free, no key needed)
+    let image_prompt = payload.get("image_prompt")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| format!("educational illustration for the word '{}', clean simple modern style", word));
+    let image_url = state.pollinations.generate_image_url(&image_prompt);
+
+    // Generate TTS audio URL via Pollinations (free, no key needed)
+    let tts_text = example.as_deref().unwrap_or_else(|| word);
+    let tts_url = crate::pollinations::TTSClient::generate_audio_url(tts_text);
+
     let card_id = Uuid::new_v4();
     let client = match state.db.get().await {
         Ok(c) => c,
@@ -41,8 +52,8 @@ pub async fn save(
     };
 
     let result = client.execute(
-        "INSERT INTO flashcards (id, user_id, word, definition, example_sentence, phonetic, part_of_speech) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-        &[&card_id, &user_id, &word, &definition, &example, &phonetic, &pos],
+        "INSERT INTO flashcards (id, user_id, word, definition, example_sentence, phonetic, part_of_speech, image_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        &[&card_id, &user_id, &word, &definition, &example, &phonetic, &pos, &image_url],
     ).await;
 
     match result {
@@ -51,8 +62,14 @@ pub async fn save(
                 "INSERT INTO srs_reviews (user_id, flashcard_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
                 &[&user_id, &card_id],
             ).await;
-            tracing::info!("Flashcard saved: {}", word);
-            (StatusCode::OK, Json(json!({"success": true, "id": card_id.to_string(), "word": word})))
+            tracing::info!("Flashcard saved: {} img={} tts={}", word, image_url, tts_url);
+            (StatusCode::OK, Json(json!({
+                "success": true,
+                "id": card_id.to_string(),
+                "word": word,
+                "image_url": image_url,
+                "tts_url": tts_url,
+            })))
         }
         Err(e) => {
             tracing::error!("DB error: {}", e);
@@ -73,7 +90,7 @@ pub async fn list(
     match state.db.get().await {
         Ok(client) => {
             let rows = client.query(
-                "SELECT id, word, definition, example_sentence, phonetic, part_of_speech, created_at FROM flashcards WHERE user_id = $1 ORDER BY created_at DESC",
+                "SELECT id, word, definition, example_sentence, phonetic, part_of_speech, image_url, tts_url FROM flashcards WHERE user_id = $1 ORDER BY created_at DESC",
                 &[&user_id],
             ).await;
 
@@ -86,6 +103,8 @@ pub async fn list(
                         "example_sentence": r.get::<_, Option<String>>("example_sentence"),
                         "phonetic": r.get::<_, Option<String>>("phonetic"),
                         "part_of_speech": r.get::<_, Option<String>>("part_of_speech"),
+                        "image_url": r.get::<_, Option<String>>("image_url"),
+                        "tts_url": r.get::<_, Option<String>>("tts_url"),
                     })).collect();
                     Json(json!({"cards": cards}))
                 }

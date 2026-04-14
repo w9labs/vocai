@@ -12,6 +12,7 @@ mod models;
 mod nvidia;
 mod srs;
 mod session;
+mod pollinations;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -32,10 +33,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").expect("NVIDIA_API_KEY must be set");
     let nvidia_client = nvidia::NvidiaClient::new(&nvidia_api_key);
+    let pollinations_client = pollinations::PollinationsClient::new();
 
     let app_state = models::AppState {
         db: db_pool,
         nvidia: nvidia_client,
+        pollinations: pollinations_client,
     };
 
     let app = Router::new()

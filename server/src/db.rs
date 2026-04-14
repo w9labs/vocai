@@ -49,6 +49,7 @@ pub async fn run_migrations(pool: &DbPool) -> Result<(), Box<dyn std::error::Err
             definition TEXT NOT NULL,
             example_sentence TEXT,
             image_url TEXT,
+            tts_url TEXT,
             phonetic VARCHAR(100),
             part_of_speech VARCHAR(50),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -97,6 +98,8 @@ pub async fn run_migrations(pool: &DbPool) -> Result<(), Box<dyn std::error::Err
         CREATE INDEX IF NOT EXISTS idx_srs_reviews_leitner_box ON srs_reviews(leitner_box);
         CREATE INDEX IF NOT EXISTS idx_study_sessions_user_id ON study_sessions(user_id);
         CREATE INDEX IF NOT EXISTS idx_vocabulary_islands_user_id ON vocabulary_islands(user_id);
+        -- Add tts_url column if not exists (for existing deployments)
+        ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS tts_url TEXT;
     ").await?;
 
     tracing::info!("✅ Database migrations completed");

@@ -6,7 +6,7 @@
     <title>Flashcards — Vocai</title>
     <link rel="icon" type="image/svg+xml" href="/w9-logo/logo.svg">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/vocai.css?v=2">
+    <link rel="stylesheet" href="/assets/css/vocai.css">
 </head>
 <body>
     <div class="page-wrapper">
@@ -27,12 +27,10 @@
             <div class="container">
                 <div class="flex justify-between items-center mb-xl">
                     <div><h1>📇 Your Flashcards</h1><p class="text-secondary">Study and manage your vocabulary</p></div>
-                    <div class="flex gap-sm">
-                        <a href="/flashcards/new" class="btn btn--primary">✨ Generate AI Cards</a>
-                    </div>
+                    <a href="/flashcards/new" class="btn btn--primary">✨ Generate AI Cards</a>
                 </div>
 
-                <div id="flashcards-grid" class="grid grid--3col">
+                <div id="flashcards-grid" class="grid grid--2col">
                     <div class="card text-center" style="opacity:0.6; grid-column:1/-1; padding:var(--space-2xl)">
                         <div class="loading"><div class="loading__spinner"></div><p>Loading flashcards...</p></div>
                     </div>
@@ -49,7 +47,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const res = await fetch('/api/flashcards');
+                const res = await fetch('/api/flashcards', { credentials: 'include' });
                 const data = await res.json();
                 const grid = document.getElementById('flashcards-grid');
 
@@ -60,11 +58,13 @@
 
                 grid.innerHTML = data.cards.map(c => `
                     <div class="card">
+                        ${c.image_url ? `<img src="${c.image_url}" alt="${c.word}" style="width:100%; border-radius:var(--radius-md); margin-bottom:var(--space-md)" loading="lazy" onerror="this.style.display='none'" />` : ''}
                         <h3 style="color:var(--primary-light)">${c.word}</h3>
                         ${c.phonetic ? `<p class="mono" style="font-size:.85rem">${c.phonetic}</p>` : ''}
                         ${c.part_of_speech ? `<span class="badge badge--info">${c.part_of_speech}</span>` : ''}
                         <p class="mt-sm">${c.definition}</p>
                         ${c.example_sentence ? `<p class="mt-sm" style="color:var(--secondary); font-style:italic; font-size:.9rem">"${c.example_sentence}"</p>` : ''}
+                        ${c.tts_url ? `<button class="btn btn--secondary btn--sm mt-sm" onclick="new Audio('${c.tts_url}').play()">🔊 Listen</button>` : ''}
                     </div>
                 `).join('');
             } catch(e) {
