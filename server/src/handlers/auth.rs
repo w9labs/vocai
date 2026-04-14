@@ -6,6 +6,7 @@ use axum::{
 use cookie::Cookie;
 use serde::Deserialize;
 use tracing;
+use uuid::Uuid;
 
 const W9_DB_URL: &str = "https://db.w9.nu";
 
@@ -40,8 +41,7 @@ pub async fn callback(Query(q): Query<OAuthCallback>) -> impl IntoResponse {
         Ok(r) => r,
         Err(e) => {
             tracing::error!("Token exchange failed: {}", e);
-            let oauth_url = format!("{}/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai", W9_DB_URL);
-            return Redirect::to(&oauth_url).into_response();
+            return Redirect::to("https://db.w9.nu/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai").into_response();
         }
     };
 
@@ -49,8 +49,7 @@ pub async fn callback(Query(q): Query<OAuthCallback>) -> impl IntoResponse {
         Ok(j) => j,
         Err(e) => {
             tracing::error!("Failed to parse token response: {}", e);
-            let oauth_url = format!("{}/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai", W9_DB_URL);
-            return Redirect::to(&oauth_url).into_response();
+            return Redirect::to("https://db.w9.nu/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai").into_response();
         }
     };
 
@@ -58,15 +57,54 @@ pub async fn callback(Query(q): Query<OAuthCallback>) -> impl IntoResponse {
         Some(t) => t.to_string(),
         None => {
             tracing::error!("No access_token in response: {}", json);
-            let oauth_url = format!("{}/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai", W9_DB_URL);
-            return Redirect::to(&oauth_url).into_response();
+            return Redirect::to("https://db.w9.nu/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai").into_response();
         }
     };
 
-    tracing::info!("Auth successful, setting session cookie");
+    // Get user info from w9-db /api/auth/me
+    let user_info = match client
+        .get(format!("{}/api/auth/me", W9_DB_URL))
+        .header("Authorization", format!("Bearer {}", token))
+        .send()
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::error!("Failed to get user info: {}", e);
+            return Redirect::to("https://db.w9.nu/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai").into_response();
+        }
+    };
 
+    let user_json = match user_info.json::<serde_json::Value>().await {
+        Ok(j) => j,
+        Err(e) => {
+            tracing::error!("Failed to parse user info: {}", e);
+            return Redirect::to("https://db.w9.nu/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai").into_response();
+        }
+    };
+
+    let email = user_json.get("email")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown@vocai.top")
+        .to_string();
+
+    let user_id = user_json.get("id")
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok())
+        .unwrap_or_else(|| Uuid::new_v4());
+
+    tracing::info!("User authenticated: {} (id={})", email, user_id);
+
+    // Upsert user in our database
+    let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    match upsert_user(&db_url, user_id, &email).await {
+        Ok(_) => tracing::info!("User saved to DB: {}", email),
+        Err(e) => tracing::warn!("Failed to save user (non-critical): {}", e),
+    }
+
+    // Set session cookie
     let mut response = Redirect::to("/dashboard").into_response();
-    let mut cookie = Cookie::new("vocai_session", token);
+    let mut cookie = Cookie::new("vocai_session", format!("{}:{}", user_id, token));
     cookie.set_path("/");
     cookie.set_http_only(true);
     cookie.set_secure(true);
@@ -77,6 +115,19 @@ pub async fn callback(Query(q): Query<OAuthCallback>) -> impl IntoResponse {
         HeaderValue::from_str(&cookie.to_string()).unwrap(),
     );
     response
+}
+
+async fn upsert_user(db_url: &str, user_id: Uuid, email: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let config: tokio_postgres::Config = db_url.parse()?;
+    let manager = bb8_postgres::PostgresConnectionManager::new(config, tokio_postgres::NoTls);
+    let pool = bb8::Pool::builder().max_size(5).build(manager).await?;
+    
+    let client = pool.get().await?;
+    client.execute(
+        "INSERT INTO users (id, email) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET email = $2, updated_at = NOW()",
+        &[&user_id, &email],
+    ).await?;
+    Ok(())
 }
 
 pub async fn logout() -> impl IntoResponse {
@@ -94,13 +145,20 @@ pub async fn logout() -> impl IntoResponse {
     response
 }
 
-pub fn get_session_token(headers: &axum::http::HeaderMap) -> Option<String> {
+/// Parse "user_id:token" from cookie, return both
+pub fn get_session(headers: &axum::http::HeaderMap) -> Option<(Uuid, String)> {
     let cookie_header = headers.get(header::COOKIE)?;
     let cookie_str = cookie_header.to_str().ok()?;
-    for cookie in cookie_str.split(';') {
-        let c = cookie.trim();
+    for c in cookie_str.split(';') {
+        let c = c.trim();
         if c.starts_with("vocai_session=") {
-            return Some(c.trim_start_matches("vocai_session=").to_string());
+            let val = c.trim_start_matches("vocai_session=");
+            if let Some((uid_str, token)) = val.split_once(':') {
+                if let Ok(uid) = Uuid::parse_str(uid_str) {
+                    return Some((uid, token.to_string()));
+                }
+            }
+            return None;
         }
     }
     None

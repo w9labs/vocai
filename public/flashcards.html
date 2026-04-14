@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Your vocabulary flashcards — study, review, and manage your word collection.">
-    <meta name="robots" content="noindex, nofollow">
     <title>Flashcards — Vocai</title>
     <link rel="icon" type="image/svg+xml" href="/w9-logo/logo.svg">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,10 +12,7 @@
     <div class="page-wrapper">
         <nav class="nav">
             <div class="container nav__inner">
-                <a href="/" class="nav__logo">
-                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai" />
-                    <span>Vocai</span>
-                </a>
+                <a href="/" class="nav__logo"><img src="/w9-logo/workmark-transparent.svg" alt="Vocai" /><span>Vocai</span></a>
                 <ul class="nav__links">
                     <li><a href="/dashboard" class="nav__link">Dashboard</a></li>
                     <li><a href="/flashcards" class="nav__link" style="color:var(--secondary)">Flashcards</a></li>
@@ -31,21 +26,15 @@
         <main>
             <div class="container">
                 <div class="flex justify-between items-center mb-xl">
-                    <div>
-                        <h1>📇 Your Flashcards</h1>
-                        <p class="text-secondary">Study and manage your vocabulary collection</p>
-                    </div>
+                    <div><h1>📇 Your Flashcards</h1><p class="text-secondary">Study and manage your vocabulary</p></div>
                     <div class="flex gap-sm">
                         <a href="/flashcards/new" class="btn btn--primary">✨ Generate AI Cards</a>
                     </div>
                 </div>
 
                 <div id="flashcards-grid" class="grid grid--3col">
-                    <!-- Cards loaded by JS -->
                     <div class="card text-center" style="opacity:0.6; grid-column:1/-1; padding:var(--space-2xl)">
-                        <h3>No flashcards yet</h3>
-                        <p class="mt-sm text-secondary">Generate your first set with AI to get started</p>
-                        <a href="/flashcards/new" class="btn btn--primary mt-md">✨ Generate Flashcards</a>
+                        <div class="loading"><div class="loading__spinner"></div><p>Loading flashcards...</p></div>
                     </div>
                 </div>
             </div>
@@ -53,13 +42,36 @@
 
         <footer class="footer">
             <div class="container footer__inner">
-                <div class="footer__logo">
-                    <img src="/w9-logo/workmark-transparent.svg" alt="W9 Labs" />
-                    <span>Built with 💜 by W9 Labs</span>
-                </div>
+                <div class="footer__logo"><img src="/w9-logo/workmark-transparent.svg" alt="W9 Labs" /><span>Built with 💜 by W9 Labs</span></div>
             </div>
         </footer>
     </div>
-    <script src="/assets/js/vocai.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('/api/flashcards');
+                const data = await res.json();
+                const grid = document.getElementById('flashcards-grid');
+
+                if (!data.cards || data.cards.length === 0) {
+                    grid.innerHTML = '<div class="card text-center" style="opacity:0.6; grid-column:1/-1; padding:var(--space-2xl)"><h3>No flashcards yet</h3><p class="mt-sm text-secondary">Generate your first set with AI</p><a href="/flashcards/new" class="btn btn--primary mt-md">✨ Generate Flashcards</a></div>';
+                    return;
+                }
+
+                grid.innerHTML = data.cards.map(c => `
+                    <div class="card">
+                        <h3 style="color:var(--primary-light)">${c.word}</h3>
+                        ${c.phonetic ? `<p class="mono" style="font-size:.85rem">${c.phonetic}</p>` : ''}
+                        ${c.part_of_speech ? `<span class="badge badge--info">${c.part_of_speech}</span>` : ''}
+                        <p class="mt-sm">${c.definition}</p>
+                        ${c.example_sentence ? `<p class="mt-sm" style="color:var(--secondary); font-style:italic; font-size:.9rem">"${c.example_sentence}"</p>` : ''}
+                    </div>
+                `).join('');
+            } catch(e) {
+                console.error('Failed to load flashcards:', e);
+                document.getElementById('flashcards-grid').innerHTML = '<div class="card text-center" style="opacity:0.6; grid-column:1/-1"><p>Failed to load. <a href="/login">Login</a> to view your cards.</p></div>';
+            }
+        });
+    </script>
 </body>
 </html>

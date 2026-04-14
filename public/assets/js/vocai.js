@@ -204,6 +204,7 @@ class FlashcardManager {
 class AIGenerationManager {
     constructor() {
         this.isGenerating = false;
+        this._cards = [];
     }
 
     async generateFlashcards(topic, count = 10, language = 'English', difficulty = 'intermediate') {
@@ -230,7 +231,8 @@ class AIGenerationManager {
             if (!response.ok) throw new Error('Generation failed');
 
             const result = await response.json();
-            this.renderGeneratedCards(result.flashcards);
+            this._cards = result.flashcards || [];
+            this.renderGeneratedCards(this._cards);
             
         } catch (error) {
             console.error('Error generating flashcards:', error);
@@ -259,14 +261,14 @@ class AIGenerationManager {
         container.innerHTML = `
             <h3 class="mt-lg">Generated Flashcards</h3>
             <div class="grid grid--2col mt-md">
-                ${cards.map(card => `
+                ${cards.map((card, i) => `
                     <div class="card fade-in">
                         <h4 style="color: var(--primary-light);">${card.word}</h4>
-                        ${card.phonetic ? `<p class="mono">${card.phonetic}</p>` : ''}
+                        ${card.phonetic ? `<p class="mono" style="font-size:.85rem">${card.phonetic}</p>` : ''}
                         ${card.part_of_speech ? `<span class="badge badge--info">${card.part_of_speech}</span>` : ''}
                         <p class="mt-sm">${card.definition}</p>
-                        ${card.example_sentence ? `<p class="mt-sm" style="color: var(--secondary); font-style: italic;">"${card.example_sentence}"</p>` : ''}
-                        <button class="btn btn--secondary btn--sm mt-md" onclick="aiManager.saveCard('${card.word}')">
+                        ${card.example_sentence ? `<p class="mt-sm" style="color: var(--secondary); font-style: italic; font-size:.9rem;">"${card.example_sentence}"</p>` : ''}
+                        <button class="btn btn--secondary btn--sm mt-md" onclick="aiManager.saveCard(aiManager._cards[${i}])">
                             Save to Collection
                         </button>
                     </div>
@@ -275,21 +277,22 @@ class AIGenerationManager {
         `;
     }
 
-    async saveCard(word) {
+    async saveCard(card) {
         try {
-            const response = await fetch('/flashcards/save', {
+            const response = await fetch('/api/flashcards/save', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ word })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(card)
             });
-
-            if (response.ok) {
-                alert('Card saved successfully!');
+            const result = await response.json();
+            if (result.success) {
+                alert(`"${card.word}" saved to your collection!`);
+            } else {
+                alert('Failed to save: ' + (result.error || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error saving card:', error);
+            alert('Failed to save card');
         }
     }
 

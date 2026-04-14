@@ -1,17 +1,102 @@
 use axum::{
-    extract::{Path, State},
-    http::StatusCode,
+    extract::{Path, State, Request},
+    http::{StatusCode, HeaderMap},
     response::IntoResponse,
-    Form,
     Json,
+    Form,
 };
 use serde_json::json;
 use tracing;
-use crate::models::{AppState, GeneratedFlashcard};
+use uuid::Uuid;
+use crate::models::AppState;
 use crate::nvidia::Model;
 
-pub async fn list(State(_state): State<AppState>) -> impl IntoResponse {
-    super::serve_html("flashcards").await
+pub async fn save(
+    State(state): State<AppState>,
+    req: Request,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let headers = req.headers();
+    let (user_id, _token) = match crate::handlers::auth::get_session(headers) {
+        Some(s) => s,
+        None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Not authenticated"}))),
+    };
+
+    // Parse body from request
+    let body = axum::body::to_bytes(req.into_body(), 1024 * 1024).await;
+    let payload: serde_json::Value = match body {
+        Ok(b) => serde_json::from_slice(&b).unwrap_or(serde_json::json!({})),
+        Err(_) => return (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid body"}))),
+    };
+
+    let word = payload.get("word").and_then(|v| v.as_str()).unwrap_or("");
+    let definition = payload.get("definition").and_then(|v| v.as_str()).unwrap_or("");
+    let example = payload.get("example_sentence").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let phonetic = payload.get("phonetic").and_then(|v| v.as_str()).map(|s| s.to_string());
+    let pos = payload.get("part_of_speech").and_then(|v| v.as_str()).map(|s| s.to_string());
+
+    let card_id = Uuid::new_v4();
+    let client = match state.db.get().await {
+        Ok(c) => c,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    };
+
+    let result = client.execute(
+        "INSERT INTO flashcards (id, user_id, word, definition, example_sentence, phonetic, part_of_speech) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        &[&card_id, &user_id, &word, &definition, &example, &phonetic, &pos],
+    ).await;
+
+    match result {
+        Ok(_) => {
+            let _ = client.execute(
+                "INSERT INTO srs_reviews (user_id, flashcard_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+                &[&user_id, &card_id],
+            ).await;
+            tracing::info!("Flashcard saved: {}", word);
+            (StatusCode::OK, Json(json!({"success": true, "id": card_id.to_string(), "word": word})))
+        }
+        Err(e) => {
+            tracing::error!("DB error: {}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()})))
+        }
+    }
+}
+
+pub async fn list(
+    State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
+) -> impl IntoResponse {
+    let (user_id, _token) = match crate::handlers::auth::get_session(&headers) {
+        Some(s) => s,
+        None => return Json(json!({"cards": []})),
+    };
+
+    match state.db.get().await {
+        Ok(client) => {
+            let rows = client.query(
+                "SELECT id, word, definition, example_sentence, phonetic, part_of_speech, created_at FROM flashcards WHERE user_id = $1 ORDER BY created_at DESC",
+                &[&user_id],
+            ).await;
+
+            match rows {
+                Ok(rows) => {
+                    let cards: Vec<serde_json::Value> = rows.iter().map(|r| json!({
+                        "id": r.get::<_, Uuid>("id").to_string(),
+                        "word": r.get::<_, String>("word"),
+                        "definition": r.get::<_, String>("definition"),
+                        "example_sentence": r.get::<_, Option<String>>("example_sentence"),
+                        "phonetic": r.get::<_, Option<String>>("phonetic"),
+                        "part_of_speech": r.get::<_, Option<String>>("part_of_speech"),
+                    })).collect();
+                    Json(json!({"cards": cards}))
+                }
+                Err(e) => {
+                    tracing::error!("DB error listing cards: {}", e);
+                    Json(json!({"cards": []}))
+                }
+            }
+        }
+        Err(_) => Json(json!({"cards": []})),
+    }
 }
 
 pub async fn new_form(State(_state): State<AppState>) -> impl IntoResponse {
@@ -122,22 +207,5 @@ pub async fn review(
         "repetitions": reps,
         "leitner_box": new_box,
         "next_review": next_review
-    }))
-}
-
-pub async fn save(
-    State(_state): State<AppState>,
-    Json(payload): Json<serde_json::Value>,
-) -> impl IntoResponse {
-    let word = payload.get("word")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
-
-    tracing::info!("Saving flashcard for word: {}", word);
-
-    // In production, insert into flashcards table
-    Json(json!({
-        "success": true,
-        "word": word
     }))
 }
