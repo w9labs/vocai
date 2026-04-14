@@ -17,14 +17,16 @@ class FlashcardManager {
     async loadFlashcard(cardId) {
         try {
             const response = await fetch(`/flashcards/${cardId}`);
-            if (!response.ok) throw new Error('Failed to load flashcard');
-            
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Expected JSON response but got ' + (contentType || 'unknown'));
+            }
             const card = await response.json();
             this.renderFlashcard(card);
             this.currentCard = card;
         } catch (error) {
             console.error('Error loading flashcard:', error);
-            this.showError('Failed to load flashcard');
+            this.showError('Failed to load flashcard: ' + error.message);
         }
     }
 
@@ -209,7 +211,7 @@ class AIGenerationManager {
 
     async generateFlashcards(topic, count = 10, language = 'English', difficulty = 'intermediate') {
         if (this.isGenerating) return;
-        
+
         this.isGenerating = true;
         this.showLoadingState();
 
@@ -222,21 +224,29 @@ class AIGenerationManager {
 
             const response = await fetch('/flashcards/generate', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: formData.toString()
             });
 
-            if (!response.ok) throw new Error('Generation failed');
+            // Check content type before parsing
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                throw new Error(`Server returned ${response.status}: ${text.substring(0, 100)}`);
+            }
 
             const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.error || 'Generation failed');
+            }
+
             this._cards = result.flashcards || [];
             this.renderGeneratedCards(this._cards);
-            
+
         } catch (error) {
             console.error('Error generating flashcards:', error);
-            this.showError('Failed to generate flashcards. Please try again.');
+            this.showError('Failed to generate flashcards: ' + error.message);
         } finally {
             this.isGenerating = false;
         }

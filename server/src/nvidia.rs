@@ -51,8 +51,12 @@ struct NvidiaMessage {
 
 impl NvidiaClient {
     pub fn new(api_key: &str) -> Self {
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(90))
+            .build()
+            .expect("Failed to create HTTP client");
         Self {
-            client: Client::new(),
+            client,
             api_key: api_key.to_string(),
             base_url: "https://integrate.api.nvidia.com/v1".to_string(),
             model: Model::MiniMaxM27,

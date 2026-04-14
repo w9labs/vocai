@@ -137,8 +137,11 @@ pub async fn generate(
     let api_key = std::env::var("NVIDIA_API_KEY").expect("NVIDIA_API_KEY must be set");
     let client = crate::nvidia::NvidiaClient::new(&api_key).with_model(model);
 
-    match client.generate_flashcards(&topic, count, &language, &difficulty).await {
-        Ok(flashcards) => {
+    match tokio::time::timeout(
+        std::time::Duration::from_secs(120),
+        client.generate_flashcards(&topic, count, &language, &difficulty),
+    ).await {
+        Ok(Ok(flashcards)) => {
             tracing::info!("Successfully generated {} flashcards", flashcards.len());
             (StatusCode::OK, Json(json!({
                 "success": true,
@@ -146,11 +149,18 @@ pub async fn generate(
                 "flashcards": flashcards
             })))
         }
-        Err(e) => {
+        Ok(Err(e)) => {
             tracing::error!("Failed to generate flashcards: {}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({
                 "success": false,
                 "error": e.to_string()
+            })))
+        }
+        Err(_) => {
+            tracing::error!("Flashcard generation timed out after 120s");
+            (StatusCode::GATEWAY_TIMEOUT, Json(json!({
+                "success": false,
+                "error": "AI generation timed out. Please try again with fewer words or a simpler topic."
             })))
         }
     }
