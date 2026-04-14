@@ -127,8 +127,14 @@ pub async fn new_form(State(_state): State<AppState>) -> impl IntoResponse {
 
 pub async fn generate(
     State(state): State<AppState>,
+    headers: axum::http::HeaderMap,
     Form(params): Form<serde_json::Value>,
 ) -> impl IntoResponse {
+    let (user_id, _token) = match crate::handlers::auth::get_session(&headers) {
+        Some(s) => s,
+        None => return (StatusCode::UNAUTHORIZED, Json(json!({"success": false, "error": "Not authenticated"}))),
+    };
+
     let topic = params.get("topic")
         .and_then(|v| v.as_str())
         .unwrap_or("general")
@@ -152,6 +158,16 @@ pub async fn generate(
         .and_then(|v| v.as_str())
         .unwrap_or("minimax");
     let model = Model::from_str(model_str);
+
+    // Rate limiting: 20 AI requests per user per hour
+    let user_id_str = user_id.to_string();
+    if !state.check_ai_rate_limit(&user_id_str).await {
+        tracing::warn!("Rate limit exceeded for user {}", user_id);
+        return (StatusCode::TOO_MANY_REQUESTS, Json(json!({
+            "success": false,
+            "error": "Rate limit exceeded. Please wait before generating more flashcards."
+        })));
+    }
 
     tracing::info!("Generating {} flashcards for topic: {} using model: {}", count, topic, model.id());
 
@@ -291,44 +307,5 @@ pub async fn study(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    // Study mode for a flashcard
     (StatusCode::OK, format!("Study mode for flashcard: {}", id))
-}
-
-pub async fn review(
-    State(state): State<AppState>,
-    axum::Json(payload): axum::Json<crate::models::ReviewAnswer>,
-) -> impl IntoResponse {
-    // Process review answer and update SRS
-    tracing::info!("Review answer for card {} with quality {}", payload.flashcard_id, payload.quality);
-
-    // Get existing SRS review for this card
-    // In production, fetch from DB. For now, use defaults.
-    let default_review = crate::models::SrsReview {
-        id: uuid::Uuid::nil(),
-        user_id: uuid::Uuid::nil(),
-        flashcard_id: payload.flashcard_id,
-        easiness_factor: 2.5,
-        interval_days: 0,
-        repetitions: 0,
-        next_review: chrono::Utc::now(),
-        last_review: None,
-        leitner_box: 1,
-        created_at: chrono::Utc::now(),
-    };
-
-    let (ef, interval, reps, new_box, next_review) = 
-        crate::srs::HybridSrs::process_review(&default_review, payload.quality);
-
-    // Save study session
-    // In production, insert into study_sessions table
-
-    Json(json!({
-        "success": true,
-        "easiness_factor": ef,
-        "interval_days": interval,
-        "repetitions": reps,
-        "leitner_box": new_box,
-        "next_review": next_review
-    }))
 }

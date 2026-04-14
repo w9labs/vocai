@@ -7,6 +7,13 @@ pub struct AppState {
     pub nvidia: crate::nvidia::NvidiaClient,
     pub pollinations: crate::pollinations::PollinationsClient,
     pub http_client: reqwest::Client,
+    pub rate_limiter: RateLimiter,
+}
+
+impl AppState {
+    pub async fn check_ai_rate_limit(&self, user_id: &str) -> bool {
+        self.rate_limiter.is_allowed(&format!("ai:{}", user_id)).await
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -32,16 +39,6 @@ pub struct Flashcard {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct VocabularyIsland {
-    pub id: Uuid,
-    pub user_id: Uuid,
-    pub name: String,
-    pub description: Option<String>,
-    pub topic: String,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SrsReview {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -56,13 +53,12 @@ pub struct SrsReview {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct StudySession {
-    pub id: Uuid,
-    pub user_id: Uuid,
-    pub flashcard_id: Uuid,
-    pub quality: i32,
-    pub review_timestamp: chrono::DateTime<chrono::Utc>,
-    pub response_time_ms: Option<i32>,
+pub struct GeneratedFlashcard {
+    pub word: String,
+    pub definition: String,
+    pub example_sentence: String,
+    pub phonetic: Option<String>,
+    pub part_of_speech: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -76,29 +72,39 @@ pub struct UserStats {
     pub last_review_date: Option<chrono::NaiveDate>,
 }
 
-// AI Generation structures
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct GeneratedFlashcard {
-    pub word: String,
-    pub definition: String,
-    pub example_sentence: String,
-    pub phonetic: Option<String>,
-    pub part_of_speech: String,
-    pub image_prompt: Option<String>,
+// Rate limiter
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use tokio::time::Instant;
+
+#[derive(Clone)]
+pub struct RateLimiter {
+    state: Arc<Mutex<HashMap<String, Vec<Instant>>>>,
+    max_requests: usize,
+    window_secs: u64,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct GenerateRequest {
-    pub topic: String,
-    pub count: Option<usize>,
-    pub language: Option<String>,
-    pub difficulty: Option<String>,
-}
+impl RateLimiter {
+    pub fn new(max_requests: usize, window_secs: u64) -> Self {
+        Self {
+            state: Arc::new(Mutex::new(HashMap::new())),
+            max_requests,
+            window_secs,
+        }
+    }
 
-// Review quality for SM-2 algorithm
-#[derive(Debug, Deserialize)]
-pub struct ReviewAnswer {
-    pub flashcard_id: Uuid,
-    pub quality: i32, // 0-5 scale
-    pub response_time_ms: Option<i32>,
+    pub async fn is_allowed(&self, key: &str) -> bool {
+        let now = Instant::now();
+        let window = std::time::Duration::from_secs(self.window_secs);
+        let mut state = self.state.lock().await;
+        let entries = state.entry(key.to_string()).or_default();
+        entries.retain(|t| now.duration_since(*t) < window);
+        if entries.len() < self.max_requests {
+            entries.push(now);
+            true
+        } else {
+            false
+        }
+    }
 }

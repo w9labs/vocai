@@ -3,21 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Review your vocabulary flashcards with spaced repetition.">
-    <meta name="robots" content="noindex, nofollow">
     <title>Review — Vocai</title>
     <link rel="icon" type="image/svg+xml" href="/w9-logo/logo.svg">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/vocai.css?v=2">
+    <link rel="stylesheet" href="/assets/css/vocai.css">
 </head>
 <body>
     <div class="page-wrapper">
         <nav class="nav">
             <div class="container nav__inner">
-                <a href="/" class="nav__logo">
-                    <img src="/w9-logo/workmark-transparent.svg" alt="Vocai" />
-                    <span>Vocai</span>
-                </a>
+                <a href="/" class="nav__logo"><img src="/w9-logo/workmark-transparent.svg" alt="Vocai" /><span>Vocai</span></a>
                 <ul class="nav__links">
                     <li><a href="/dashboard" class="nav__link">Dashboard</a></li>
                     <li><a href="/flashcards" class="nav__link">Flashcards</a></li>
@@ -35,17 +30,20 @@
                         <h1>🎯 Review Session</h1>
                         <p class="text-secondary">SM-2 + Leitner spaced repetition</p>
                     </div>
-                    <div class="badge badge--info"><span id="cards-left">0</span> remaining</div>
+                    <div class="badge badge--info"><span id="cards-left">—</span> remaining</div>
                 </div>
 
-                <!-- Flashcard -->
                 <div id="flashcard-container">
                     <div class="card text-center" style="padding:var(--space-2xl); min-height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center">
-                        <div class="loading">
-                            <div class="loading__spinner"></div>
-                            <p>Loading review...</p>
-                        </div>
+                        <div class="loading"><div class="loading__spinner"></div><p>Loading review session...</p></div>
                     </div>
+                </div>
+
+                <div id="review-controls" class="review-buttons mt-lg" style="display:none">
+                    <button class="review-btn review-btn--again" onclick="submitAnswer(0)">Again<br><small>1m</small></button>
+                    <button class="review-btn review-btn--hard" onclick="submitAnswer(2)">Hard<br><small>3d</small></button>
+                    <button class="review-btn review-btn--good" onclick="submitAnswer(4)">Good<br><small>7d</small></button>
+                    <button class="review-btn review-btn--easy" onclick="submitAnswer(5)">Easy<br><small>30d</small></button>
                 </div>
 
                 <!-- Progress -->
@@ -53,91 +51,113 @@
                     <div style="background:var(--bg-elevated); border-radius:var(--radius-md); height:8px; overflow:hidden">
                         <div id="progress" style="background:linear-gradient(90deg,var(--primary),var(--secondary)); height:100%; width:0%; transition:width .3s"></div>
                     </div>
-                    <p class="text-center text-secondary mt-sm"><span id="done">0</span> / <span id="total">0</span> reviewed</p>
+                    <p class="text-center text-secondary mt-sm"><span id="done">0</span> reviewed</p>
                 </div>
 
                 <!-- Session stats -->
                 <div class="grid grid--3col mt-xl">
-                    <div class="stats-card">
-                        <div class="stats-card__value" id="stat-correct" style="color:var(--success)">0</div>
-                        <div class="stats-card__label">Correct ✓</div>
-                    </div>
-                    <div class="stats-card">
-                        <div class="stats-card__value" id="stat-wrong" style="color:var(--error)">0</div>
-                        <div class="stats-card__label">Again ✗</div>
-                    </div>
-                    <div class="stats-card">
-                        <div class="stats-card__value" id="stat-acc">0%</div>
-                        <div class="stats-card__label">Accuracy</div>
-                    </div>
-                </div>
-
-                <div class="card mt-xl">
-                    <h2>How Review Works</h2>
-                    <div class="grid grid--2col mt-md">
-                        <div>
-                            <h4 style="color:var(--primary-light)">SM-2 Algorithm</h4>
-                            <p class="text-secondary">Adjusts intervals based on how well you recall. Hard words come back sooner, easy words wait longer.</p>
-                        </div>
-                        <div>
-                            <h4 style="color:var(--primary-light)">Leitner Boxes</h4>
-                            <p class="text-secondary">Words move through 5 boxes: Daily → 3d → Weekly → Biweekly → Monthly. Wrong answers reset to box 1.</p>
-                        </div>
-                    </div>
-                    <div class="review-buttons mt-md">
-                        <div class="text-center"><span class="leitner-box leitner-box--1">Again 1m</span><p class="text-secondary mt-xs" style="font-size:.85rem">Forgot</p></div>
-                        <div class="text-center"><span class="leitner-box leitner-box--2">Hard 3d</span><p class="text-secondary mt-xs" style="font-size:.85rem">Struggled</p></div>
-                        <div class="text-center"><span class="leitner-box leitner-box--3">Good 7d</span><p class="text-secondary mt-xs" style="font-size:.85rem">Remembered</p></div>
-                        <div class="text-center"><span class="leitner-box leitner-box--5">Easy 30d</span><p class="text-secondary mt-xs" style="font-size:.85rem">Trivial</p></div>
-                    </div>
+                    <div class="stats-card"><div class="stats-card__value" id="stat-correct" style="color:var(--success)">0</div><div class="stats-card__label">Correct ✓</div></div>
+                    <div class="stats-card"><div class="stats-card__value" id="stat-wrong" style="color:var(--error)">0</div><div class="stats-card__label">Again ✗</div></div>
+                    <div class="stats-card"><div class="stats-card__value" id="stat-acc">0%</div><div class="stats-card__label">Accuracy</div></div>
                 </div>
             </div>
         </main>
 
         <footer class="footer">
             <div class="container footer__inner">
-                <div class="footer__logo">
-                    <img src="/w9-logo/workmark-transparent.svg" alt="W9 Labs" />
-                    <span>Built with 💜 by W9 Labs</span>
-                </div>
+                <div class="footer__logo"><img src="/w9-logo/workmark-transparent.svg" alt="W9 Labs" /><span>Built with 💜 by W9 Labs</span></div>
             </div>
         </footer>
     </div>
-    <script src="/assets/js/vocai.js?v=3"></script>
     <script>
-        let S={c:0,w:0,t:0};
-        function upd(){
-            document.getElementById('stat-correct').textContent=S.c;
-            document.getElementById('stat-wrong').textContent=S.w;
-            document.getElementById('stat-acc').textContent=S.t?Math.round(S.c/S.t*100)+'%':'0%';
-            document.getElementById('done').textContent=S.t;
+        let currentCard = null;
+        let stats = { correct: 0, wrong: 0, total: 0 };
+        let startTime = Date.now();
+
+        function speakText(text) {
+            if (!text) return;
+            new Audio('/api/tts?text=' + encodeURIComponent(text)).play().catch(()=>{});
         }
 
-        // Load review session
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const stats = await (await fetch('/stats')).json();
-                document.getElementById('total').textContent = stats.due_count || 0;
-                document.getElementById('cards-left').textContent = stats.due_count || 0;
-                const container = document.getElementById('flashcard-container');
+        function updateStats() {
+            document.getElementById('stat-correct').textContent = stats.correct;
+            document.getElementById('stat-wrong').textContent = stats.wrong;
+            document.getElementById('stat-acc').textContent = stats.total ? Math.round(stats.correct/stats.total*100)+'%' : '0%';
+            document.getElementById('done').textContent = stats.total;
+        }
 
-                if (!stats.due_count || stats.due_count === 0) {
-                    container.innerHTML = '<div class="card text-center" style="padding:var(--space-2xl)"><h2>🎉 No cards due for review!</h2><p class="mt-md text-secondary">Generate new flashcards or come back later.</p><a href="/flashcards/new" class="btn btn--primary mt-md">✨ Generate Flashcards</a></div>';
+        function flipCard() {
+            const front = document.getElementById('card-front');
+            const back = document.getElementById('card-back');
+            if (!front || !back) return;
+            const isFlipped = front.classList.contains('hidden');
+            front.classList.toggle('hidden');
+            back.classList.toggle('hidden');
+            document.getElementById('review-controls').style.display = isFlipped ? 'none' : 'grid';
+        }
+
+        async function loadNextCard() {
+            try {
+                const res = await fetch('/api/review/next', { credentials: 'include' });
+                const card = await res.json();
+
+                if (card.done) {
+                    document.getElementById('flashcard-container').innerHTML =
+                        '<div class="card text-center" style="padding:var(--space-2xl)"><h2>🎉 Review Complete!</h2><p class="mt-md text-secondary">You reviewed ' + stats.total + ' cards with ' + document.getElementById('stat-acc').textContent + ' accuracy.</p><a href="/dashboard" class="btn btn--primary mt-md">Back to Dashboard</a></div>';
+                    document.getElementById('review-controls').style.display = 'none';
+                    document.getElementById('cards-left').textContent = '0';
                     return;
                 }
 
-                // Load first review card
-                loadNextReviewCard();
+                currentCard = card;
+                const container = document.getElementById('flashcard-container');
+                container.innerHTML = `
+                    <div class="flashcard" onclick="flipCard()" style="cursor:pointer">
+                        <div class="flashcard__front" id="card-front">
+                            ${card.image_url ? `<img src="${card.image_url}" alt="${card.word}" class="flashcard__image" style="max-height:200px;margin-bottom:var(--space-md)" />` : ''}
+                            <div class="flashcard__word">${card.word}</div>
+                            ${card.phonetic ? `<div class="flashcard__phonetic">${card.phonetic}</div>` : ''}
+                            ${card.part_of_speech ? `<span class="badge badge--info">${card.part_of_speech}</span>` : ''}
+                            <p class="mt-md text-secondary">Click to reveal definition</p>
+                        </div>
+                        <div class="flashcard__back hidden" id="card-back">
+                            <div class="flashcard__definition">${card.definition}</div>
+                            ${card.example_sentence ? `<div class="flashcard__example">"${card.example_sentence}"</div>` : ''}
+                            <button class="btn btn--secondary btn--sm mt-md" onclick="event.stopPropagation(); speakText('${(card.example_sentence || card.word).replace(/'/g, "\\'")}')">🔊 Listen</button>
+                        </div>
+                    </div>`;
+                document.getElementById('review-controls').style.display = 'none';
+                document.getElementById('cards-left').textContent = '...';
             } catch(e) {
-                console.error('Failed to load review session:', e);
+                console.error('Failed to load card:', e);
             }
-        });
-
-        async function loadNextReviewCard() {
-            // For now, show a placeholder - full review flow requires SRS implementation
-            const container = document.getElementById('flashcard-container');
-            container.innerHTML = '<div class="card text-center" style="padding:var(--space-2xl)"><h2>📝 Review Session</h2><p class="mt-md text-secondary">Review flow is being built. Check back soon!</p></div>';
         }
+
+        async function submitAnswer(quality) {
+            if (!currentCard) return;
+            stats.total++;
+            if (quality >= 3) stats.correct++; else stats.wrong++;
+            updateStats();
+
+            try {
+                await fetch('/api/review/answer', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        flashcard_id: currentCard.id,
+                        quality: quality,
+                        response_time_ms: Date.now() - startTime,
+                    }),
+                });
+                startTime = Date.now();
+                loadNextCard();
+            } catch(e) {
+                console.error('Failed to submit answer:', e);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadNextCard);
     </script>
 </body>
 </html>
