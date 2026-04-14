@@ -1,39 +1,40 @@
 use reqwest::Client;
 use tracing;
 
-/// Pollinations image generator — free, no API key needed
+/// Pollinations image generator — uses API key for authenticated access
 #[derive(Clone)]
 pub struct PollinationsClient {
     client: Client,
+    api_key: String,
 }
 
 impl PollinationsClient {
-    pub fn new() -> Self {
+    pub fn new(api_key: &str) -> Self {
         Self {
             client: Client::builder()
-                .timeout(std::time::Duration::from_secs(30))
+                .timeout(std::time::Duration::from_secs(60))
                 .build()
                 .expect("Failed to create HTTP client"),
+            api_key: api_key.to_string(),
         }
     }
 
     /// Generate image URL for a flashcard word.
-    /// Returns a direct URL to the generated image (Pollinations serves it directly).
+    /// Uses authenticated endpoint with API key for higher rate limits.
     pub fn generate_image_url(&self, prompt: &str) -> String {
-        // Use flux-schnell for fast generation (~2-3s)
         format!(
-            "https://image.pollinations.ai/prompt/{}?model=flux-schnell&width=512&height=512&nologo=true",
-            urlencoding::encode(prompt)
+            "https://image.pollinations.ai/prompt/{}?model=flux-schnell&width=512&height=512&nologo=true&token={}",
+            urlencoding::encode(prompt),
+            self.api_key
         )
     }
 
-    /// Generate and download image bytes (for caching/serving locally)
+    /// Generate and download image bytes
     pub async fn generate_image(&self, prompt: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let url = self.generate_image_url(prompt);
         tracing::info!("Generating image from Pollinations: {}", prompt);
 
         let response = self.client.get(&url).send().await?;
-
         if !response.status().is_success() {
             return Err(format!("Pollinations API error: {}", response.status()).into());
         }
@@ -44,17 +45,18 @@ impl PollinationsClient {
     }
 }
 
-/// Pollinations text-to-speech — free, no API key needed
-/// GET https://text.pollinations.ai/<text> returns the spoken audio
+/// Google Translate TTS — free, no API key needed
+/// Uses the unofficial translate.google.com endpoint
 pub struct TTSClient;
 
 impl TTSClient {
-    /// Generate TTS audio URL for a word/phrase.
-    /// Returns a direct URL — when accessed, Pollinations returns audio.
-    pub fn generate_audio_url(text: &str) -> String {
-        // Simple free TTS — no model param needed, works out of the box
+    /// Generate TTS audio URL for text.
+    /// Returns MP3 audio when accessed.
+    /// lang: language code (en, es, fr, de, zh, ja, ko, vi, etc.)
+    pub fn generate_audio_url(text: &str, lang: &str) -> String {
         format!(
-            "https://text.pollinations.ai/{}",
+            "https://translate.google.com/translate_tts?ie=UTF-8&tl={}&client=tw-ob&q={}",
+            lang,
             urlencoding::encode(text)
         )
     }

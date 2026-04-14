@@ -32,8 +32,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     db::run_migrations(&db_pool).await.expect("Failed to run migrations");
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").expect("NVIDIA_API_KEY must be set");
+    let pollinations_api_key = std::env::var("POLLINATIONS_API_KEY")
+        .unwrap_or_else(|_| String::new());
     let nvidia_client = nvidia::NvidiaClient::new(&nvidia_api_key);
-    let pollinations_client = pollinations::PollinationsClient::new();
+    let pollinations_client = pollinations::PollinationsClient::new(&pollinations_api_key);
 
     let app_state = models::AppState {
         db: db_pool,

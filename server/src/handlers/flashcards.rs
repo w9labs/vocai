@@ -41,9 +41,12 @@ pub async fn save(
         .unwrap_or_else(|| format!("educational illustration for the word '{}', clean simple modern style", word));
     let image_url = state.pollinations.generate_image_url(&image_prompt);
 
-    // Generate TTS audio URL via Pollinations (free, no key needed)
+    // Generate TTS audio URL via Google Translate TTS (free, no key needed)
+    let lang = payload.get("language")
+        .and_then(|v| v.as_str())
+        .unwrap_or("en");
     let tts_text = example.as_deref().unwrap_or_else(|| word);
-    let tts_url = crate::pollinations::TTSClient::generate_audio_url(tts_text);
+    let tts_url = crate::pollinations::TTSClient::generate_audio_url(tts_text, lang);
 
     let card_id = Uuid::new_v4();
     let client = match state.db.get().await {
