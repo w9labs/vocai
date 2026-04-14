@@ -55,6 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/flashcards", get(handlers::flashcards_page))
         .route("/api/flashcards", get(handlers::flashcards::list))
         .route("/api/flashcards/save", post(handlers::flashcards::save))
+        .route("/api/flashcards/migrate", post(handlers::flashcards::migrate))
         .route("/flashcards/new", get(handlers::flashcards_new_page))
         .route("/flashcards/generate", post(handlers::flashcards::generate))
         .route("/flashcards/:id", get(handlers::flashcards::view))
