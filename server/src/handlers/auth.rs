@@ -83,34 +83,22 @@ pub async fn callback(Query(q): Query<OAuthCallback>) -> impl IntoResponse {
         }
     };
 
-    // Try multiple field names for user ID (OIDC sub, or w9-db custom id)
-    let user_id = user_json.get("sub")
-        .or_else(|| user_json.get("user_id"))
-        .or_else(|| user_json.get("id"))
-        .and_then(|v| v.as_str())
-        .and_then(|s| Uuid::parse_str(s).ok());
-
-    let user_id = match user_id {
-        Some(uid) => uid,
-        None => {
-            tracing::error!("Cannot extract user_id from auth response. Fields: {:?}", user_json.as_object().map(|o| o.keys().collect::<Vec<_>>()));
-            return Redirect::to("https://db.w9.nu/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai").into_response();
-        }
-    };
-
     let email = user_json.get("email")
         .and_then(|v| v.as_str())
         .unwrap_or("unknown@vocai.top")
         .to_string();
 
-    tracing::info!("User authenticated: {} (id={})", email, user_id);
-
-    // Upsert user in our database
+    // Look up or create user by email
     let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    match upsert_user(&db_url, user_id, &email).await {
-        Ok(_) => tracing::info!("User saved to DB: {}", email),
-        Err(e) => tracing::warn!("Failed to save user (non-critical): {}", e),
-    }
+    let user_id = match upsert_user(&db_url, &email).await {
+        Ok(uid) => uid,
+        Err(e) => {
+            tracing::error!("Failed to upsert user: {}", e);
+            return Redirect::to("https://db.w9.nu/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai").into_response();
+        }
+    };
+
+    tracing::info!("User authenticated: {} (id={})", email, user_id);
 
     // Set session cookie
     let mut response = Redirect::to("/dashboard").into_response();
@@ -127,17 +115,32 @@ pub async fn callback(Query(q): Query<OAuthCallback>) -> impl IntoResponse {
     response
 }
 
-async fn upsert_user(db_url: &str, user_id: Uuid, email: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+async fn upsert_user(db_url: &str, email: &str) -> Result<Uuid, Box<dyn std::error::Error + Send + Sync>> {
     let config: tokio_postgres::Config = db_url.parse()?;
     let manager = bb8_postgres::PostgresConnectionManager::new(config, tokio_postgres::NoTls);
     let pool = bb8::Pool::builder().max_size(5).build(manager).await?;
-    
+
     let client = pool.get().await?;
-    client.execute(
-        "INSERT INTO users (id, email) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET email = $2, updated_at = NOW()",
-        &[&user_id, &email],
+
+    // Try to find existing user by email
+    let existing = client.query_opt(
+        "SELECT id FROM users WHERE email = $1",
+        &[&email],
     ).await?;
-    Ok(())
+
+    if let Some(row) = existing {
+        return Ok(row.get::<_, Uuid>("id"));
+    }
+
+    // Create new user
+    let new_id = Uuid::new_v4();
+    client.execute(
+        "INSERT INTO users (id, email) VALUES ($1, $2)",
+        &[&new_id, &email],
+    ).await?;
+
+    tracing::info!("Created new user: {} (id={})", email, new_id);
+    Ok(new_id)
 }
 
 pub async fn logout() -> impl IntoResponse {
