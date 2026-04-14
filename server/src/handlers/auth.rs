@@ -83,15 +83,25 @@ pub async fn callback(Query(q): Query<OAuthCallback>) -> impl IntoResponse {
         }
     };
 
+    // Try multiple field names for user ID (OIDC sub, or w9-db custom id)
+    let user_id = user_json.get("sub")
+        .or_else(|| user_json.get("user_id"))
+        .or_else(|| user_json.get("id"))
+        .and_then(|v| v.as_str())
+        .and_then(|s| Uuid::parse_str(s).ok());
+
+    let user_id = match user_id {
+        Some(uid) => uid,
+        None => {
+            tracing::error!("Cannot extract user_id from auth response. Fields: {:?}", user_json.as_object().map(|o| o.keys().collect::<Vec<_>>()));
+            return Redirect::to("https://db.w9.nu/oauth/authorize?redirect_uri=https://vocai.top/oauth/callback&response_type=code&client_id=vocai").into_response();
+        }
+    };
+
     let email = user_json.get("email")
         .and_then(|v| v.as_str())
         .unwrap_or("unknown@vocai.top")
         .to_string();
-
-    let user_id = user_json.get("id")
-        .and_then(|v| v.as_str())
-        .and_then(|s| Uuid::parse_str(s).ok())
-        .unwrap_or_else(|| Uuid::new_v4());
 
     tracing::info!("User authenticated: {} (id={})", email, user_id);
 
