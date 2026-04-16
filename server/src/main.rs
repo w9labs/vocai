@@ -1,10 +1,10 @@
 use axum::{
+    Router,
     body::Body,
     extract::{Query, State},
-    http::{header, HeaderValue, Response, StatusCode},
+    http::{HeaderValue, Response, StatusCode, header},
     response::IntoResponse,
     routing::{get, post},
-    Router,
 };
 use serde::Deserialize;
 use tower_http::services::{ServeDir, ServeFile};
@@ -30,14 +30,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
 
     let db_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let db_pool = db::init_pool(&db_url).await.expect("Failed to create DB pool");
-    db::run_migrations(&db_pool).await.expect("Failed to run migrations");
+    let db_pool = db::init_pool(&db_url)
+        .await
+        .expect("Failed to create DB pool");
+    db::run_migrations(&db_pool)
+        .await
+        .expect("Failed to run migrations");
 
     let nvidia_api_key = std::env::var("NVIDIA_API_KEY").expect("NVIDIA_API_KEY must be set");
     let nvidia_client = nvidia::NvidiaClient::new(&nvidia_api_key);
     let pollinations_client = pollinations::PollinationsClient::new()?;
     if !pollinations_client.has_key() {
-        tracing::warn!("POLLINATIONS_API_KEY is not set; flashcards will save without generated images");
+        tracing::warn!(
+            "POLLINATIONS_API_KEY is not set; flashcards will save without generated images"
+        );
     }
     let http_client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
@@ -60,12 +66,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", get(handlers::index))
         .route("/health", get(handlers::health))
         .route("/api/health", get(handlers::health))
-
         // Auth
         .route("/login", get(handlers::auth::login))
         .route("/oauth/callback", get(handlers::auth::callback))
         .route("/logout", get(handlers::auth::logout))
-
         // Pages
         .route("/dashboard", get(handlers::dashboard))
         .route("/flashcards", get(handlers::flashcards_page))
@@ -75,20 +79,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/review", get(handlers::review_page))
         .route("/stats", get(handlers::stats))
         .route("/profile", get(handlers::profile))
-
         // JSON APIs
         .route("/api/flashcards", get(handlers::flashcards::list))
         .route("/api/flashcards/save", post(handlers::flashcards::save))
-        .route("/api/flashcards/migrate", post(handlers::flashcards::migrate))
-        .route("/api/flashcards/generate", post(handlers::flashcards::generate))
-
+        .route(
+            "/api/flashcards/migrate",
+            post(handlers::flashcards::migrate),
+        )
+        .route(
+            "/api/flashcards/generate",
+            post(handlers::flashcards::generate),
+        )
         // Review session API
         .route("/api/review/next", get(handlers::review::next_card))
         .route("/api/review/answer", post(handlers::review::answer))
-
         // TTS proxy (Google Translate — no CORS issues)
         .route("/api/tts", get(tts_proxy))
-
         // Static files
         .route_service("/favicon.ico", ServeFile::new("public/w9-logo/logo.svg"))
         .route_service("/favicon.svg", ServeFile::new("public/w9-logo/logo.svg"))
@@ -114,7 +120,9 @@ struct TTSParams {
     lang: String,
 }
 
-fn default_lang() -> String { "en".to_string() }
+fn default_lang() -> String {
+    "en".to_string()
+}
 
 async fn tts_proxy(
     State(state): State<crate::models::AppState>,
@@ -137,14 +145,16 @@ async fn tts_proxy(
 
             let mut response = Response::new(Body::from(body));
             *response.status_mut() = status;
+            response
+                .headers_mut()
+                .insert(header::CONTENT_TYPE, HeaderValue::from_static("audio/mpeg"));
             response.headers_mut().insert(
-                header::CONTENT_TYPE, HeaderValue::from_static("audio/mpeg"),
+                header::CACHE_CONTROL,
+                HeaderValue::from_static("public, max-age=86400"),
             );
             response.headers_mut().insert(
-                header::CACHE_CONTROL, HeaderValue::from_static("public, max-age=86400"),
-            );
-            response.headers_mut().insert(
-                header::ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue::from_static("*"),
+                header::ACCESS_CONTROL_ALLOW_ORIGIN,
+                HeaderValue::from_static("*"),
             );
             response
         }

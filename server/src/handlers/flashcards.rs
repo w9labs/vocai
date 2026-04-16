@@ -1,8 +1,8 @@
 use axum::{
+    Json,
     extract::{Form, Path, State},
     http::{HeaderMap, StatusCode},
     response::IntoResponse,
-    Json,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -62,11 +62,17 @@ fn build_image_prompt(
         prompt.push_str(&format!(", meaning \"{}\"", definition));
     }
 
-    if let Some(example) = example_sentence.map(str::trim).filter(|value| !value.is_empty()) {
+    if let Some(example) = example_sentence
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
         prompt.push_str(&format!(", shown in the context of \"{}\"", example));
     }
 
-    if let Some(pos) = part_of_speech.map(str::trim).filter(|value| !value.is_empty()) {
+    if let Some(pos) = part_of_speech
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
         prompt.push_str(&format!(", part of speech {}", pos));
     }
 
@@ -102,7 +108,9 @@ async fn generate_flashcard_image(
 
     match tokio::time::timeout(
         Duration::from_secs(45),
-        state.pollinations.generate_image(prompt, Some(&resolved_model), Some(&user_key)),
+        state
+            .pollinations
+            .generate_image(prompt, Some(&resolved_model), Some(&user_key)),
     )
     .await
     {
@@ -137,7 +145,12 @@ pub async fn save(
 ) -> (StatusCode, Json<serde_json::Value>) {
     let (user_id, _token) = match crate::handlers::auth::get_session(&headers) {
         Some(session) => session,
-        None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Not authenticated"}))),
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"error": "Not authenticated"})),
+            );
+        }
     };
 
     let word = payload.word.trim();
@@ -167,18 +180,19 @@ pub async fn save(
     let tts_text = payload.example_sentence.as_deref().unwrap_or(word);
     let tts_url = build_tts_url(tts_text, tts_lang);
 
-    let image = generate_flashcard_image(
-        &state,
-        &user_id,
-        &image_prompt,
-        Some(&resolved_image_model),
-    )
-    .await;
+    let image =
+        generate_flashcard_image(&state, &user_id, &image_prompt, Some(&resolved_image_model))
+            .await;
 
     let card_id = Uuid::new_v4();
     let client = match state.db.get().await {
         Ok(client) => client,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": e.to_string()})),
+            );
+        }
     };
 
     let image_url = image.url.clone();
@@ -239,15 +253,15 @@ pub async fn save(
         }
         Err(e) => {
             tracing::error!("DB error: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()})))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": e.to_string()})),
+            )
         }
     }
 }
 
-pub async fn list(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-) -> impl IntoResponse {
+pub async fn list(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
     let (user_id, _token) = match crate::handlers::auth::get_session(&headers) {
         Some(session) => session,
         None => return Json(json!({"cards": []})),
@@ -308,14 +322,16 @@ pub async fn generate(
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(json!({"success": false, "error": "Not authenticated"})),
-            )
+            );
         }
     };
 
     let topic = params.topic.unwrap_or_else(|| "general".to_string());
     let count = params.count.unwrap_or(10).clamp(1, 20);
     let language = params.language.unwrap_or_else(|| "English".to_string());
-    let difficulty = params.difficulty.unwrap_or_else(|| "intermediate".to_string());
+    let difficulty = params
+        .difficulty
+        .unwrap_or_else(|| "intermediate".to_string());
     let model_str = params.model.unwrap_or_else(|| "minimax".to_string());
     let model = Model::from_str(&model_str);
 
@@ -381,10 +397,7 @@ pub async fn generate(
     }
 }
 
-pub async fn view(
-    Path(id): Path<String>,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+pub async fn view(Path(id): Path<String>, State(state): State<AppState>) -> impl IntoResponse {
     let card_id = match Uuid::parse_str(&id) {
         Ok(uuid) => uuid,
         Err(_) => {
@@ -392,7 +405,7 @@ pub async fn view(
                 StatusCode::BAD_REQUEST,
                 Json(json!({"error": "Invalid card ID"})),
             )
-                .into_response()
+                .into_response();
         }
     };
 
@@ -406,18 +419,21 @@ pub async fn view(
                 .await;
 
             match row {
-                Ok(Some(row)) => (StatusCode::OK, Json(json!({
-                    "id": row.get::<_, Uuid>("id").to_string(),
-                    "word": row.get::<_, String>("word"),
-                    "definition": row.get::<_, String>("definition"),
-                    "example_sentence": row.get::<_, Option<String>>("example_sentence"),
-                    "phonetic": row.get::<_, Option<String>>("phonetic"),
-                    "part_of_speech": row.get::<_, Option<String>>("part_of_speech"),
-                    "image_url": row.get::<_, Option<String>>("image_url"),
-                    "image_prompt": row.get::<_, Option<String>>("image_prompt"),
-                    "image_model": row.get::<_, Option<String>>("image_model"),
-                })))
-                .into_response(),
+                Ok(Some(row)) => (
+                    StatusCode::OK,
+                    Json(json!({
+                        "id": row.get::<_, Uuid>("id").to_string(),
+                        "word": row.get::<_, String>("word"),
+                        "definition": row.get::<_, String>("definition"),
+                        "example_sentence": row.get::<_, Option<String>>("example_sentence"),
+                        "phonetic": row.get::<_, Option<String>>("phonetic"),
+                        "part_of_speech": row.get::<_, Option<String>>("part_of_speech"),
+                        "image_url": row.get::<_, Option<String>>("image_url"),
+                        "image_prompt": row.get::<_, Option<String>>("image_prompt"),
+                        "image_model": row.get::<_, Option<String>>("image_model"),
+                    })),
+                )
+                    .into_response(),
                 Ok(None) => (
                     StatusCode::NOT_FOUND,
                     Json(json!({"error": "Flashcard not found"})),
@@ -438,18 +454,25 @@ pub async fn view(
     }
 }
 
-pub async fn migrate(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-) -> impl IntoResponse {
+pub async fn migrate(State(state): State<AppState>, headers: HeaderMap) -> impl IntoResponse {
     let (user_id, _token) = match crate::handlers::auth::get_session(&headers) {
         Some(session) => session,
-        None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Not authenticated"}))),
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"error": "Not authenticated"})),
+            );
+        }
     };
 
     let client = match state.db.get().await {
         Ok(client) => client,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": e.to_string()})),
+            );
+        }
     };
 
     let rows = match client
@@ -588,9 +611,6 @@ pub async fn migrate(
     )
 }
 
-pub async fn study(
-    Path(id): Path<String>,
-    State(_state): State<AppState>,
-) -> impl IntoResponse {
+pub async fn study(Path(id): Path<String>, State(_state): State<AppState>) -> impl IntoResponse {
     (StatusCode::OK, format!("Study mode for flashcard: {}", id))
 }

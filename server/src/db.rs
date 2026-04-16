@@ -5,15 +5,14 @@ use tracing;
 
 pub type DbPool = Pool<PostgresConnectionManager<NoTls>>;
 
-pub async fn init_pool(database_url: &str) -> Result<DbPool, Box<dyn std::error::Error + Send + Sync>> {
+pub async fn init_pool(
+    database_url: &str,
+) -> Result<DbPool, Box<dyn std::error::Error + Send + Sync>> {
     // Use the database URL from environment
     let config: tokio_postgres::Config = database_url.parse()?;
     let manager = PostgresConnectionManager::new(config, NoTls);
-    
-    let pool = Pool::builder()
-        .max_size(15)
-        .build(manager)
-        .await?;
+
+    let pool = Pool::builder().max_size(15).build(manager).await?;
 
     tracing::info!("✅ Database pool initialized");
     Ok(pool)
@@ -21,8 +20,10 @@ pub async fn init_pool(database_url: &str) -> Result<DbPool, Box<dyn std::error:
 
 pub async fn run_migrations(pool: &DbPool) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let client = pool.get().await?;
-    
-    client.batch_execute("
+
+    client
+        .batch_execute(
+            "
         CREATE TABLE IF NOT EXISTS users (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             email VARCHAR(255) UNIQUE NOT NULL,
@@ -104,7 +105,9 @@ pub async fn run_migrations(pool: &DbPool) -> Result<(), Box<dyn std::error::Err
         ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS tts_url TEXT;
         ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS image_prompt TEXT;
         ALTER TABLE flashcards ADD COLUMN IF NOT EXISTS image_model VARCHAR(100);
-    ").await?;
+    ",
+        )
+        .await?;
 
     tracing::info!("✅ Database migrations completed");
     Ok(())

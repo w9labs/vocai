@@ -1,4 +1,4 @@
-use reqwest::header::{HeaderValue, AUTHORIZATION, REFERER, USER_AGENT};
+use reqwest::header::{AUTHORIZATION, HeaderValue, REFERER, USER_AGENT};
 use serde::Deserialize;
 use std::time::Duration;
 use thiserror::Error;
@@ -56,17 +56,21 @@ impl PollinationsClient {
             .ok()
             .and_then(|value| {
                 let trimmed = value.trim().to_string();
-                if trimmed.is_empty() { None } else { Some(trimmed) }
+                if trimmed.is_empty() {
+                    None
+                } else {
+                    Some(trimmed)
+                }
             });
 
         let api_base = std::env::var("POLLINATIONS_API_BASE")
             .unwrap_or_else(|_| "https://gen.pollinations.ai".to_string());
-        let default_model = std::env::var("POLLINATIONS_IMAGE_MODEL")
-            .unwrap_or_else(|_| "flux".to_string());
-        let default_size = std::env::var("POLLINATIONS_IMAGE_SIZE")
-            .unwrap_or_else(|_| "512x512".to_string());
-        let default_quality = std::env::var("POLLINATIONS_IMAGE_QUALITY")
-            .unwrap_or_else(|_| "medium".to_string());
+        let default_model =
+            std::env::var("POLLINATIONS_IMAGE_MODEL").unwrap_or_else(|_| "flux".to_string());
+        let default_size =
+            std::env::var("POLLINATIONS_IMAGE_SIZE").unwrap_or_else(|_| "512x512".to_string());
+        let default_quality =
+            std::env::var("POLLINATIONS_IMAGE_QUALITY").unwrap_or_else(|_| "medium".to_string());
         let referrer = std::env::var("POLLINATIONS_REFERRER")
             .or_else(|_| std::env::var("VOCAI_BASE_URL"))
             .unwrap_or_else(|_| "https://vocai.top".to_string());
@@ -101,18 +105,27 @@ impl PollinationsClient {
             return Err(PollinationsError::MissingPrompt);
         }
 
-        let api_key = self.api_key.as_deref().ok_or(PollinationsError::MissingKey)?;
+        let api_key = self
+            .api_key
+            .as_deref()
+            .ok_or(PollinationsError::MissingKey)?;
         let resolved_model = model
             .map(str::trim)
             .filter(|value| !value.is_empty())
             .unwrap_or(&self.default_model);
 
-        let url = format!("{}/v1/images/generations", self.api_base.trim_end_matches('/'));
-        let request = self.http.post(url)
+        let url = format!(
+            "{}/v1/images/generations",
+            self.api_base.trim_end_matches('/')
+        );
+        let request = self
+            .http
+            .post(url)
             .header(AUTHORIZATION, format!("Bearer {}", api_key))
             .header(
                 REFERER,
-                HeaderValue::from_str(&self.referrer).unwrap_or_else(|_| HeaderValue::from_static("https://vocai.top")),
+                HeaderValue::from_str(&self.referrer)
+                    .unwrap_or_else(|_| HeaderValue::from_static("https://vocai.top")),
             )
             .header(USER_AGENT, HeaderValue::from_static("vocai/1.0"))
             .json(&serde_json::json!({
@@ -160,7 +173,9 @@ impl PollinationsClient {
             });
         }
 
-        Err(PollinationsError::Response("missing url in response".into()))
+        Err(PollinationsError::Response(
+            "missing url in response".into(),
+        ))
     }
 }
 

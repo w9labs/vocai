@@ -144,11 +144,17 @@ Ensure words are practical and related to the topic."#,
 
         // Extract JSON array from response
         let json_start = content.find('[').ok_or("No JSON array found in response")?;
-        let json_end = content.rfind(']').ok_or("No JSON array end found in response")?;
+        let json_end = content
+            .rfind(']')
+            .ok_or("No JSON array end found in response")?;
         let json_str = &content[json_start..=json_end];
 
         let flashcards: Vec<crate::models::GeneratedFlashcard> = serde_json::from_str(json_str)?;
-        tracing::info!("Generated {} flashcards via {}", flashcards.len(), self.model.id());
+        tracing::info!(
+            "Generated {} flashcards via {}",
+            flashcards.len(),
+            self.model.id()
+        );
         Ok(flashcards)
     }
 

@@ -77,7 +77,7 @@
                 }
             } catch(e) {
                 console.error('Failed to load dashboard:', e);
-                document.getElementById('due-cards').innerHTML = '<p class="text-secondary">Please <a href="/login">login</a> to see your dashboard.</p>';
+                    document.getElementById('due-cards').innerHTML = '<p class="text-secondary">Please <a href="/login" onclick="const w=window.open(this.href,\'vocai-login\',\'width=520,height=720\'); if (w) { w.focus(); return false; }">login</a> to see your dashboard.</p>';
             }
         });
     </script>

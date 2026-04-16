@@ -30,7 +30,7 @@
                     <li><a href="/flashcards" class="nav__link">Flashcards</a></li>
                     <li><a href="/islands" class="nav__link">Islands</a></li>
                     <li><a href="/review" class="nav__link">Review</a></li>
-                    <li><a href="/login" class="btn btn--primary btn--sm">Login with W9</a></li>
+                    <li><a href="/login" class="btn btn--primary btn--sm" onclick="const w=window.open(this.href,'vocai-login','width=520,height=720'); if (w) { w.focus(); return false; }">Login with W9</a></li>
                 </ul>
             </div>
         </nav>
@@ -41,7 +41,7 @@
                 <h1 class="hero__title">Vocai</h1>
                 <p class="hero__subtitle">Master vocabulary with AI-powered flashcards, contextual examples, and spaced repetition. Pollinations renders mnemonic images when you save a card.</p>
                 <div class="flex gap-md justify-center mt-xl">
-                    <a href="/login" class="btn btn--primary btn--lg">Start Learning — Free</a>
+                    <a href="/login" class="btn btn--primary btn--lg" onclick="const w=window.open(this.href,'vocai-login','width=520,height=720'); if (w) { w.focus(); return false; }">Start Learning — Free</a>
                     <a href="#features" class="btn btn--secondary btn--lg">Learn More</a>
                 </div>
             </div>

@@ -12,11 +12,15 @@ pub struct AppState {
 
 impl AppState {
     pub async fn check_ai_rate_limit(&self, user_id: &str) -> bool {
-        self.rate_limiter.is_allowed(&format!("ai:{}", user_id)).await
+        self.rate_limiter
+            .is_allowed(&format!("ai:{}", user_id))
+            .await
     }
 
     pub async fn check_image_rate_limit(&self, user_id: &str) -> bool {
-        self.rate_limiter.is_allowed(&format!("image:{}", user_id)).await
+        self.rate_limiter
+            .is_allowed(&format!("image:{}", user_id))
+            .await
     }
 }
 

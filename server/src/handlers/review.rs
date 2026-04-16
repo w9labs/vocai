@@ -1,14 +1,14 @@
+use crate::models::AppState;
 use axum::{
+    Json,
     extract::State,
     http::{HeaderMap, StatusCode},
     response::IntoResponse,
-    Json,
 };
 use serde::Deserialize;
 use serde_json::json;
 use tracing;
 use uuid::Uuid;
-use crate::models::AppState;
 
 #[derive(Deserialize)]
 pub struct ReviewAnswer {
@@ -28,7 +28,12 @@ pub async fn next_card(
 ) -> (StatusCode, Json<serde_json::Value>) {
     let user_id = match crate::handlers::auth::get_session(&headers).map(|(u, _)| u) {
         Some(uid) => uid,
-        None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Not authenticated"}))),
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"error": "Not authenticated"})),
+            );
+        }
     };
 
     match state.db.get().await {
@@ -44,25 +49,34 @@ pub async fn next_card(
             ).await;
 
             match row {
-                Ok(Some(row)) => (StatusCode::OK, Json(json!({
-                    "id": row.get::<_, Uuid>("id").to_string(),
-                    "word": row.get::<_, String>("word"),
-                    "definition": row.get::<_, String>("definition"),
-                    "example_sentence": row.get::<_, Option<String>>("example_sentence"),
-                    "phonetic": row.get::<_, Option<String>>("phonetic"),
-                    "part_of_speech": row.get::<_, Option<String>>("part_of_speech"),
-                    "image_url": row.get::<_, Option<String>>("image_url"),
-                    "image_prompt": row.get::<_, Option<String>>("image_prompt"),
-                    "image_model": row.get::<_, Option<String>>("image_model"),
-                }))),
+                Ok(Some(row)) => (
+                    StatusCode::OK,
+                    Json(json!({
+                        "id": row.get::<_, Uuid>("id").to_string(),
+                        "word": row.get::<_, String>("word"),
+                        "definition": row.get::<_, String>("definition"),
+                        "example_sentence": row.get::<_, Option<String>>("example_sentence"),
+                        "phonetic": row.get::<_, Option<String>>("phonetic"),
+                        "part_of_speech": row.get::<_, Option<String>>("part_of_speech"),
+                        "image_url": row.get::<_, Option<String>>("image_url"),
+                        "image_prompt": row.get::<_, Option<String>>("image_prompt"),
+                        "image_model": row.get::<_, Option<String>>("image_model"),
+                    })),
+                ),
                 Ok(None) => (StatusCode::OK, Json(json!({"done": true}))),
                 Err(e) => {
                     tracing::error!("DB error in next_card: {}", e);
-                    (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": "Database error"})))
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(json!({"error": "Database error"})),
+                    )
                 }
             }
         }
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": e.to_string()})),
+        ),
     }
 }
 
@@ -73,12 +87,22 @@ pub async fn answer(
 ) -> (StatusCode, Json<serde_json::Value>) {
     let user_id = match crate::handlers::auth::get_session(&headers).map(|(u, _)| u) {
         Some(uid) => uid,
-        None => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "Not authenticated"}))),
+        None => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"error": "Not authenticated"})),
+            );
+        }
     };
 
     let flashcard_id = match Uuid::parse_str(&payload.flashcard_id) {
         Ok(id) => id,
-        Err(_) => return (StatusCode::BAD_REQUEST, Json(json!({"error": "Invalid flashcard_id"}))),
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({"error": "Invalid flashcard_id"})),
+            );
+        }
     };
 
     let quality = payload.quality.clamp(0, 5);
@@ -97,7 +121,11 @@ pub async fn answer(
                     let repetitions: i32 = row.get("repetitions");
                     let leitner_box: i32 = row.get("leitner_box");
                     crate::srs::HybridSrs::process_review_quality(
-                        ef, interval_days, repetitions, leitner_box, quality,
+                        ef,
+                        interval_days,
+                        repetitions,
+                        leitner_box,
+                        quality,
                     )
                 }
                 _ => crate::srs::HybridSrs::process_review_quality(2.5, 0, 0, 1, quality),
@@ -112,17 +140,21 @@ pub async fn answer(
                 &[&ef, &interval, &reps, &new_box, &now_str, &now_str, &user_id, &flashcard_id],
             ).await;
 
-            let _ = client.execute(
-                "INSERT INTO study_sessions (user_id, flashcard_id, quality, response_time_ms)
+            let _ = client
+                .execute(
+                    "INSERT INTO study_sessions (user_id, flashcard_id, quality, response_time_ms)
                  VALUES ($1, $2, $3, $4)",
-                &[&user_id, &flashcard_id, &quality, &payload.response_time_ms],
-            ).await;
+                    &[&user_id, &flashcard_id, &quality, &payload.response_time_ms],
+                )
+                .await;
 
             // Update streak
-            let _ = client.execute(
-                "INSERT INTO user_stats (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
-                &[&user_id],
-            ).await;
+            let _ = client
+                .execute(
+                    "INSERT INTO user_stats (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING",
+                    &[&user_id],
+                )
+                .await;
 
             let today_str = now.format("%Y-%m-%d").to_string();
             let _ = client.execute(
@@ -146,14 +178,20 @@ pub async fn answer(
                 &[&user_id, &today_str],
             ).await;
 
-            (StatusCode::OK, Json(json!({
-                "success": true,
-                "easiness_factor": ef,
-                "interval_days": interval,
-                "repetitions": reps,
-                "leitner_box": new_box,
-            })))
+            (
+                StatusCode::OK,
+                Json(json!({
+                    "success": true,
+                    "easiness_factor": ef,
+                    "interval_days": interval,
+                    "repetitions": reps,
+                    "leitner_box": new_box,
+                })),
+            )
         }
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": e.to_string()})),
+        ),
     }
 }

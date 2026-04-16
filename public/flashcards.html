@@ -89,7 +89,7 @@
                 `).join('');
             } catch(e) {
                 console.error('Failed to load flashcards:', e);
-                document.getElementById('flashcards-grid').innerHTML = '<div class="card text-center" style="opacity:0.6; grid-column:1/-1"><p>Failed to load. <a href="/login">Login</a> to view your cards.</p></div>';
+                document.getElementById('flashcards-grid').innerHTML = '<div class="card text-center" style="opacity:0.6; grid-column:1/-1"><p>Failed to load. <a href="/login" onclick="const w=window.open(this.href,\'vocai-login\',\'width=520,height=720\'); if (w) { w.focus(); return false; }">Login</a> to view your cards.</p></div>';
             }
         });
     </script>

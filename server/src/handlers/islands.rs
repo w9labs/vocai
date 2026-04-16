@@ -1,13 +1,12 @@
+use crate::models::AppState;
 use axum::{
+    Form, Json,
     extract::{Path, State},
     http::StatusCode,
     response::IntoResponse,
-    Form,
-    Json,
 };
 use serde_json::json;
 use tracing;
-use crate::models::AppState;
 
 pub async fn list(State(_state): State<AppState>) -> impl IntoResponse {
     super::serve_html("islands").await
@@ -21,17 +20,20 @@ pub async fn create(
     State(state): State<AppState>,
     Form(params): Form<serde_json::Value>,
 ) -> impl IntoResponse {
-    let name = params.get("name")
+    let name = params
+        .get("name")
         .and_then(|v| v.as_str())
         .unwrap_or("New Island")
         .to_string();
-    
-    let topic = params.get("topic")
+
+    let topic = params
+        .get("topic")
         .and_then(|v| v.as_str())
         .unwrap_or("general")
         .to_string();
-    
-    let description = params.get("description")
+
+    let description = params
+        .get("description")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string());
 
@@ -46,9 +48,6 @@ pub async fn create(
     }))
 }
 
-pub async fn view(
-    Path(id): Path<String>,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
+pub async fn view(Path(id): Path<String>, State(state): State<AppState>) -> impl IntoResponse {
     (StatusCode::OK, format!("Vocabulary Island: {}", id))
 }

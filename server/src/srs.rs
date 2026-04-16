@@ -27,7 +27,9 @@ impl Sm2Algorithm {
         }
 
         ef = ef + (0.1 - (5 - quality) as f64 * (0.08 + (5 - quality) as f64 * 0.02));
-        if ef < 1.3 { ef = 1.3; }
+        if ef < 1.3 {
+            ef = 1.3;
+        }
 
         (ef, interval, reps)
     }
@@ -39,12 +41,20 @@ pub struct LeitnerSystem;
 impl LeitnerSystem {
     pub fn get_review_interval_days(leitner_box: i32) -> i32 {
         match leitner_box {
-            1 => 1, 2 => 3, 3 => 7, 4 => 14, 5 | _ => 30,
+            1 => 1,
+            2 => 3,
+            3 => 7,
+            4 => 14,
+            5 | _ => 30,
         }
     }
 
     pub fn update_leitner_box(current_box: i32, quality: i32) -> i32 {
-        if quality >= 3 { (current_box + 1).min(5) } else { 1 }
+        if quality >= 3 {
+            (current_box + 1).min(5)
+        } else {
+            1
+        }
     }
 }
 
@@ -61,7 +71,10 @@ impl HybridSrs {
         quality: i32,
     ) -> (f64, i32, i32, i32, chrono::DateTime<Utc>) {
         let (ef, interval, reps) = Sm2Algorithm::calculate_next_review(
-            easiness_factor, interval_days, repetitions, quality,
+            easiness_factor,
+            interval_days,
+            repetitions,
+            quality,
         );
         let new_leitner_box = LeitnerSystem::update_leitner_box(leitner_box, quality);
         let leitner_interval = LeitnerSystem::get_review_interval_days(new_leitner_box);
